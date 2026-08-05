@@ -16,11 +16,12 @@ class FloorTest {
     void testFloorInitializationAndSilentSpawnCreation() {
         Map<Coordinate, Room> emptyMap = new HashMap<>();
         Floor floor = new Floor(1, emptyMap);
+        Navigator navigator = new Navigator(floor);
 
         assertEquals(1, floor.getFloorNumber());
         assertFalse(floor.isCleared());
-        assertEquals(new Coordinate(0, 0), floor.getCurrentPosition());
-        assertInstanceOf(SpawnRoom.class, floor.getCurrentRoom(), "Deve creare una SpawnRoom in 0,0 se assente.");
+        assertEquals(new Coordinate(0, 0), navigator.getCurrentPosition());
+        assertInstanceOf(SpawnRoom.class, navigator.getCurrentRoom(), "Deve creare una SpawnRoom in 0,0 se assente.");
         assertEquals(1, floor.getRooms().size());
     }
 
@@ -29,8 +30,9 @@ class FloorTest {
         Map<Coordinate, Room> map = new HashMap<>();
         map.put(new Coordinate(0, 0), new CombatRoom(true));
         Floor floor = new Floor(1, map);
+        Navigator navigator = new Navigator(floor);
 
-        assertInstanceOf(SpawnRoom.class, floor.getCurrentRoom(), "Eventuali stanze errate in 0,0 devono essere sovrascritte forzatamente da una SpawnRoom.");
+        assertInstanceOf(SpawnRoom.class, navigator.getCurrentRoom(), "Eventuali stanze errate in 0,0 devono essere sovrascritte forzatamente da una SpawnRoom.");
     }
 
     @Test
@@ -44,6 +46,7 @@ class FloorTest {
     @Test
     void testMarkAsCleared() {
         Floor floor = new Floor(1, new HashMap<>());
+
         assertFalse(floor.isCleared(), "Il piano non deve essere completato all'inizializzazione.");
 
         floor.markAsCleared();
@@ -58,16 +61,18 @@ class FloorTest {
         map.put(new Coordinate(0, 1), new BossRoom());
 
         Floor floor = new Floor(1, map);
-        List<Direction> doors = floor.getAvailableDoors();
+        Navigator navigator = new Navigator(floor);
+        List<Direction> doors = navigator.getAvailableDoors();
 
         assertEquals(1, doors.size());
         assertTrue(doors.contains(Direction.NORTH));
 
-        floor.move(Direction.NORTH);
+        navigator.move(Direction.NORTH);
 
-        assertEquals(new Coordinate(0, 1), floor.getCurrentPosition());
+        assertEquals(new Coordinate(0, 1), navigator.getCurrentPosition());
 
-        List<Direction> doorsFromNewRoom = floor.getAvailableDoors();
+        navigator.getCurrentRoom().markAsCleared();
+        List<Direction> doorsFromNewRoom = navigator.getAvailableDoors();
 
         assertEquals(1, doorsFromNewRoom.size());
         assertTrue(doorsFromNewRoom.contains(Direction.SOUTH));
