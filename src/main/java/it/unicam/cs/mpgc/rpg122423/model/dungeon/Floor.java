@@ -4,6 +4,8 @@ import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class Floor {
@@ -22,6 +24,27 @@ public class Floor {
 
         this.rooms.put(new Coordinate(0, 0), new SpawnRoom());
         this.currentPosition = new Coordinate(0, 0);
+    }
+
+    public List<Direction> getAvailableDoors() {
+        List<Direction> availableDoors = new ArrayList<>();
+        for (Direction direction : Direction.values()) {
+            Coordinate adjacent = new Coordinate(
+                    this.currentPosition.x() + direction.getDx(),
+                    this.currentPosition.y() + direction.getDy()
+            );
+            if (this.rooms.containsKey(adjacent)) {
+                availableDoors.add(direction);
+            }
+        }
+        return availableDoors;
+    }
+
+    public void move(Direction direction) {
+        this.currentPosition = new Coordinate(
+                this.currentPosition.x() + direction.getDx(),
+                this.currentPosition.y() + direction.getDy()
+        );
     }
 
     public int  getFloorNumber() {return floorNumber;}

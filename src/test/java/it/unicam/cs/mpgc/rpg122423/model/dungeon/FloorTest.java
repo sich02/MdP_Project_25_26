@@ -1,12 +1,11 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.CombatRoom;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,5 +49,27 @@ class FloorTest {
         floor.markAsCleared();
 
         assertTrue(floor.isCleared(), "Il piano deve risultare completato dopo la chiamata a markAsCleared.");
+    }
+
+    @Test
+    void testMovementAndAvailableDoors() {
+        Map<Coordinate, Room> map = new HashMap<>();
+        map.put(new Coordinate(0, 0), new SpawnRoom());
+        map.put(new Coordinate(0, 1), new BossRoom());
+
+        Floor floor = new Floor(1, map);
+        List<Direction> doors = floor.getAvailableDoors();
+
+        assertEquals(1, doors.size());
+        assertTrue(doors.contains(Direction.NORTH));
+
+        floor.move(Direction.NORTH);
+
+        assertEquals(new Coordinate(0, 1), floor.getCurrentPosition());
+
+        List<Direction> doorsFromNewRoom = floor.getAvailableDoors();
+
+        assertEquals(1, doorsFromNewRoom.size());
+        assertTrue(doorsFromNewRoom.contains(Direction.SOUTH));
     }
 }

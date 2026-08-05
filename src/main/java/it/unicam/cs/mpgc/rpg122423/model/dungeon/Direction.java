@@ -19,4 +19,7 @@ public enum Direction {
     public Coordinate applyTo(Coordinate origin){
         return new Coordinate(origin.x()+dx, origin.y()+dy);
     }
+
+    public int getDx() { return dx; }
+    public int getDy() { return dy; }
 }
