@@ -24,8 +24,6 @@ class LayoutGeneratorTest {
         LayoutGenerator generator = new LayoutGenerator();
         Coordinate a = new Coordinate(0, 0);
         Coordinate b = new Coordinate(3, -4);
-
-        // Distanza di Manhattan: |0 - 3| + |0 - (-4)| = 3 + 4 = 7
         assertEquals(7, generator.distance(a, b), "La distanza di Manhattan tra (0,0) e (3,-4) deve essere 7.");
     }
 
@@ -33,13 +31,11 @@ class LayoutGeneratorTest {
     void testFindDeadEnds() {
         LayoutGenerator generator = new LayoutGenerator();
         Coordinate spawn = new Coordinate(0, 0);
-
-        // Costruiamo un layout fittizio a croce incompleta
         Set<Coordinate> layout = Set.of(
                 spawn,
-                new Coordinate(1, 0), // Vicolo cieco a Est
-                new Coordinate(0, 1), // Ramo verso Nord...
-                new Coordinate(0, 2)  // ...che finisce in un vicolo cieco
+                new Coordinate(1, 0),
+                new Coordinate(0, 1),
+                new Coordinate(0, 2)
         );
 
         List<Coordinate> deadEnds = generator.findDeadEnds(layout, spawn);

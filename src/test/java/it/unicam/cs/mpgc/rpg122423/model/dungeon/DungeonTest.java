@@ -1,65 +1,44 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class DungeonTest {
 
     @Test
-    void testValidDungeonCreation() {
-        Dungeon dungeon = new Dungeon(10); // 10 è maggiore di 5, quindi valido
+    void testDungeonInitialization() {
+        Dungeon dungeon = new Dungeon();
 
-        assertEquals(10, dungeon.getTotalFloors(), "Il dungeon deve contenere esattamente il numero di piani richiesti.");
-        assertEquals(1, dungeon.getCurrentFloor().getFloorNumber(), "La run deve iniziare sempre dal piano 1.");
-        assertTrue(dungeon.hasNextFloor(), "Se ci sono 10 piani e siamo al primo, deve esserci un piano successivo.");
+        assertEquals(1, dungeon.getCurrentFloorNumber(), "Il dungeon deve iniziare dal piano 1.");
+        assertNotNull(dungeon.getCurrentFloor(), "Il piano corrente deve essere inizializzato.");
+        assertEquals(1, dungeon.getCurrentFloor().getFloorNumber(), "Il numero del Floor deve coincidere con quello del Dungeon.");
+        assertFalse(dungeon.getCurrentFloor().isCleared(), "Il piano appena generato non deve essere completato.");
     }
 
     @Test
-    void testInvalidDungeonCreation() {
-        // Ora verifichiamo la tua nuova condizione limite (<= 5)
-        assertThrows(IllegalArgumentException.class, () -> new Dungeon(5),
-                "Creare un dungeon con 5 piani deve lanciare un'eccezione in base al nuovo vincolo.");
+    void testAdvanceToNextFloorFailsIfNotCleared() {
+        Dungeon dungeon = new Dungeon();
+        Floor initialFloor = dungeon.getCurrentFloor();
 
-        assertThrows(IllegalArgumentException.class, () -> new Dungeon(0),
-                "Creare un dungeon con 0 piani deve lanciare un'eccezione.");
+        // Tentativo di discesa bloccato silenziomente
+        assertFalse(dungeon.advanceToNextFloor(), "Il metodo deve restituire false se il piano non è completato.");
+        assertEquals(1, dungeon.getCurrentFloorNumber(), "Il numero del piano non deve incrementare.");
+        assertSame(initialFloor, dungeon.getCurrentFloor(), "Il piano corrente non deve essere sovrascritto.");
     }
 
     @Test
-    void testCannotAdvanceIfFloorNotCleared() {
-        Dungeon dungeon = new Dungeon(6); // Aggiornato a 6 piani
+    void testAdvanceToNextFloorSucceedsIfCleared() {
+        Dungeon dungeon = new Dungeon();
+        Floor initialFloor = dungeon.getCurrentFloor();
 
-        // Proviamo a scendere senza aver completato il piano 1
-        assertThrows(IllegalStateException.class, dungeon::advanceToNextFloor,
-                "Deve essere impossibile avanzare se il piano corrente non è stato completato.");
-    }
+        // Simuliamo l'uccisione del boss / completamento del livello
+        initialFloor.markAsCleared();
 
-    @Test
-    void testSuccessfulAdvancement() {
-        Dungeon dungeon = new Dungeon(6); // Aggiornato a 6 piani
-
-        // Completiamo il piano 1
-        dungeon.getCurrentFloor().markAsCleared();
-        dungeon.advanceToNextFloor();
-
-        assertEquals(2, dungeon.getCurrentFloor().getFloorNumber(), "Dopo l'avanzamento, il giocatore deve trovarsi al piano 2.");
-    }
-
-    @Test
-    void testCannotAdvancePastLastFloor() {
-        Dungeon dungeon = new Dungeon(6); // Aggiornato a 6 piani
-
-        // Simuliamo il superamento dei primi 5 piani con un ciclo per arrivare all'ultimo
-        for (int i = 0; i < 5; i++) {
-            dungeon.getCurrentFloor().markAsCleared();
-            dungeon.advanceToNextFloor();
-        }
-
-        // Ora siamo al piano 6 (l'ultimo). Puliamolo.
-        dungeon.getCurrentFloor().markAsCleared();
-
-        // Proviamo a scendere ancora
-        assertFalse(dungeon.hasNextFloor(), "Al piano 6 di 6, non ci devono essere piani successivi.");
-        assertThrows(IllegalStateException.class, dungeon::advanceToNextFloor,
-                "Avanzare oltre l'ultimo piano deve lanciare un'eccezione, anche se il piano è completato.");
+        // Ora la discesa deve funzionare
+        assertTrue(dungeon.advanceToNextFloor(), "Il metodo deve restituire true se il piano è completato.");
+        assertEquals(2, dungeon.getCurrentFloorNumber(), "Il numero del piano deve incrementare a 2.");
+        assertNotSame(initialFloor, dungeon.getCurrentFloor(), "Deve essere generata e caricata una nuova istanza di Floor.");
+        assertEquals(2, dungeon.getCurrentFloor().getFloorNumber(), "Il nuovo Floor deve avere come numero di piano 2.");
     }
 }

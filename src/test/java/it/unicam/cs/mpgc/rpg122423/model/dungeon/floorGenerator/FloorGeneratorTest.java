@@ -37,7 +37,6 @@ class FloorGeneratorTest {
     void testTreasureRoomLockLogicByFloor() {
         FloorGenerator generator = new FloorGenerator();
 
-        // Test Piano 1
         Map<Coordinate, Room> floor1 = generator.generateFloor(1);
         TreasureRoom tRoom1 = (TreasureRoom) floor1.values().stream()
                 .filter(r -> r instanceof TreasureRoom).findFirst()
@@ -45,7 +44,6 @@ class FloorGeneratorTest {
 
         assertFalse(tRoom1.isLocked(), "Al piano 1 la TreasureRoom non deve MAI richiedere una chiave.");
 
-        // Test Piano 2
         Map<Coordinate, Room> floor2 = generator.generateFloor(2);
         TreasureRoom tRoom2 = (TreasureRoom) floor2.values().stream()
                 .filter(r -> r instanceof TreasureRoom).findFirst()
