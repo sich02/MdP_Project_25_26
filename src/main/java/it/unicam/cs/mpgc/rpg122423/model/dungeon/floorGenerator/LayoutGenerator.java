@@ -1,59 +1,57 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator;
 
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
 import java.util.*;
 
 public class LayoutGenerator {
 
-    private final Random random = new Random();
+    private final ShapeGenerator shapeGenerator;
+    private final TopologicalAnalyzer topologicalAnalyzer;
+    private final Random random;
 
-    public Set<Coordinate> generateShape(int targetRooms) {
-        Set<Coordinate> layout = new HashSet<>();
-        List<Coordinate> availableSlots = new ArrayList<>();
+    public LayoutGenerator() {
+        this.shapeGenerator = new ShapeGenerator();
+        this.topologicalAnalyzer = new TopologicalAnalyzer();
+        this.random = new Random();
+    }
 
+    public Map<Coordinate, Room> generateLayout(int floorNumber) {
+        Set<Coordinate> shape = shapeGenerator.generateShape(floorNumber);
         Coordinate spawn = new Coordinate(0, 0);
-        layout.add(spawn);
-        addEmptyNeighbors(spawn, layout, availableSlots);
+        Map<Coordinate, Integer> distances = topologicalAnalyzer.calculateDistances(shape, spawn);
+        List<Coordinate> deadEnds = topologicalAnalyzer.findDeadEnds(shape, spawn);
+        Coordinate bossRoomCoord = spawn;
+        int maxDist = -1;
 
-        while (layout.size() < targetRooms && !availableSlots.isEmpty()) {
-            Coordinate slot = availableSlots.remove(random.nextInt(availableSlots.size()));
-            if (layout.contains(slot)) continue;
-            if (countNeighbors(slot, layout) > 1 && random.nextDouble() > 0.5) {
-                continue;
+        for (Map.Entry<Coordinate, Integer> entry : distances.entrySet()) {
+            if (entry.getValue() > maxDist) {
+                maxDist = entry.getValue();
+                bossRoomCoord = entry.getKey();
             }
-            layout.add(slot);
-            addEmptyNeighbors(slot, layout, availableSlots);
+        }
+
+        deadEnds.remove(bossRoomCoord);
+        Collections.shuffle(deadEnds, random);
+        Coordinate treasureCoord = !deadEnds.isEmpty() ? deadEnds.remove(0) : null;
+        Coordinate shopCoord = !deadEnds.isEmpty() ? deadEnds.remove(0) : null;
+        Map<Coordinate, Room> layout = new HashMap<>();
+        layout.put(spawn, new SpawnRoom());
+        layout.put(bossRoomCoord, new BossRoom());
+
+        if (treasureCoord != null) {
+            boolean requiresKey = floorNumber >= 2;
+            layout.put(treasureCoord, new TreasureRoom(requiresKey));
+        }
+
+        if (shopCoord != null) {
+            layout.put(shopCoord, new ShopRoom());
+        }
+
+        for (Coordinate coord : shape) {
+            boolean generatesLoot = random.nextBoolean();
+            layout.putIfAbsent(coord, new CombatRoom(generatesLoot));
         }
 
         return layout;
-    }
-
-    private void addEmptyNeighbors(Coordinate coord, Set<Coordinate> layout, List<Coordinate> slots) {
-        for (Coordinate neighbor : coord.getNeighbors()) {
-            if (!layout.contains(neighbor) && !slots.contains(neighbor)) {
-                slots.add(neighbor);
-            }
-        }
-    }
-
-    public int countNeighbors(Coordinate coord, Set<Coordinate> layout) {
-        int count = 0;
-        for (Coordinate neighbor : coord.getNeighbors()) {
-            if (layout.contains(neighbor)) count++;
-        }
-        return count;
-    }
-
-    public List<Coordinate> findDeadEnds(Set<Coordinate> layout, Coordinate spawn) {
-        List<Coordinate> deadEnds = new ArrayList<>();
-        for (Coordinate coord : layout) {
-            if (!coord.equals(spawn) && countNeighbors(coord, layout) == 1) {
-                deadEnds.add(coord);
-            }
-        }
-        return deadEnds;
-    }
-
-    public int distance(Coordinate a, Coordinate b) {
-        return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
     }
 }

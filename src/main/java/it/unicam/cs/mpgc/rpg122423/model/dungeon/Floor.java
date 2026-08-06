@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class Floor {
+public class    Floor {
     private final int floorNumber;
     private boolean isCleared;
     private final Map<Coordinate, Room> rooms;
