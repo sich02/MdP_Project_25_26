@@ -1,10 +1,6 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.FloorGenerator;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
-
-import java.util.Map;
 
 public class Dungeon {
     private final FloorGenerator floorGenerator;
@@ -27,8 +23,7 @@ public class Dungeon {
     }
 
     private Floor generateAndLoadFloor(int floorNumber) {
-        Map<Coordinate, Room> layout = floorGenerator.generateFloor(floorNumber);
-        return new Floor(floorNumber, layout);
+        return floorGenerator.generateFloor(floorNumber);
     }
 
 

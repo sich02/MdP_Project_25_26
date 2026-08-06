@@ -7,7 +7,7 @@ import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 import java.util.Map;
 import java.util.Optional;
 
-public class Floor {
+public class    Floor {
     private final int floorNumber;
     private final Map<Coordinate, Room> rooms;
     private boolean cleared;
