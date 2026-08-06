@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.CombatRoom;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Direction;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 import org.junit.jupiter.api.Test;

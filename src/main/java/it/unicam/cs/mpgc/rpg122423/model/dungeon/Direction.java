@@ -1,11 +1,11 @@
-package it.unicam.cs.mpgc.rpg122423.model.dungeon;
+package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
 
 public enum Direction {
     NORTH(0, 1),
-    EAST(1, 0),
     SOUTH(0, -1),
+    EAST(1, 0),
     WEST(-1, 0);
 
     private final int dx;
@@ -16,10 +16,8 @@ public enum Direction {
         this.dy = dy;
     }
 
-    public Coordinate applyTo(Coordinate origin){
-        return new Coordinate(origin.x()+dx, origin.y()+dy);
+    // Questo è il metodo che risolve gli errori 'applyTo'
+    public Coordinate applyTo(Coordinate current) {
+        return new Coordinate(current.x() + this.dx, current.y() + this.dy);
     }
-
-    public int getDx() { return dx; }
-    public int getDy() { return dy; }
 }

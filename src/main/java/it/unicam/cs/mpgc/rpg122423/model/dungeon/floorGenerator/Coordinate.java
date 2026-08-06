@@ -1,6 +1,6 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator;
 
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Direction;
 
 import java.util.List;
 
@@ -15,6 +15,6 @@ public record Coordinate(int x, int y) {
     }
 
     public Coordinate moveTo(Direction direction) {
-        return new Coordinate(this.x() + direction.getDx(), this.y() + direction.getDy());
+        return direction.applyTo(this);
     }
 }

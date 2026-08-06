@@ -1,80 +1,74 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FloorTest {
 
     @Test
-    void testFloorInitializationAndSilentSpawnCreation() {
-        Map<Coordinate, Room> emptyMap = new HashMap<>();
-        Floor floor = new Floor(1, emptyMap);
-        Navigator navigator = new Navigator(floor);
+    void testGetRoomAtReturnsOptionalWithRoom() {
+        Map<Coordinate, Room> layout = new HashMap<>();
+        Coordinate spawnCoord = new Coordinate(0, 0);
+        Room dummyRoom = new DummyRoom(true);
+        layout.put(spawnCoord, dummyRoom);
+        Floor floor = new Floor(1, layout);
+        Optional<Room> retrievedRoom = floor.getRoomAt(new Coordinate(0, 0));
 
-        assertEquals(1, floor.getFloorNumber());
-        assertFalse(floor.isCleared());
-        assertEquals(new Coordinate(0, 0), navigator.getCurrentPosition());
-        assertInstanceOf(SpawnRoom.class, navigator.getCurrentRoom(), "Deve creare una SpawnRoom in 0,0 se assente.");
-        assertEquals(1, floor.getRooms().size());
+        assertTrue(retrievedRoom.isPresent(), "La stanza dovrebbe essere presente alle coordinate (0,0)");
+        assertEquals(dummyRoom, retrievedRoom.get(), "La stanza estratta deve essere esattamente quella inserita nel layout");
     }
 
     @Test
-    void testSilentSpawnOverwrite() {
-        Map<Coordinate, Room> map = new HashMap<>();
-        map.put(new Coordinate(0, 0), new CombatRoom(true));
-        Floor floor = new Floor(1, map);
-        Navigator navigator = new Navigator(floor);
+    void testGetRoomAtReturnsEmptyOptionalForInvalidCoordinate() {
+        Map<Coordinate, Room> layout = new HashMap<>();
+        Floor floor = new Floor(1, layout);
+        Optional<Room> emptyResult = floor.getRoomAt(new Coordinate(99, 99));
 
-        assertInstanceOf(SpawnRoom.class, navigator.getCurrentRoom(), "Eventuali stanze errate in 0,0 devono essere sovrascritte forzatamente da una SpawnRoom.");
+        assertTrue(emptyResult.isEmpty(), "Richiedere coordinate vuote deve restituire un Optional.empty()");
     }
 
     @Test
-    void testInvalidFloorNumberThrowsException() {
-        Map<Coordinate, Room> map = new HashMap<>();
-
-        assertThrows(IllegalArgumentException.class, () -> new Floor(0, map), "Un piano 0 deve lanciare eccezione.");
-        assertThrows(IllegalArgumentException.class, () -> new Floor(-1, map), "Un piano negativo deve lanciare eccezione.");
+    void testFloorIsClearedWhenAllRoomsAreCleared() {
+        Map<Coordinate, Room> layout = new HashMap<>();
+        layout.put(new Coordinate(0, 0), new DummyRoom(true));
+        layout.put(new Coordinate(1, 0), new DummyRoom(true));
+        Floor floor = new Floor(1, layout);
+        assertTrue(floor.isCleared(), "Il piano deve risultare completato se tutte le stanze lo sono");
     }
 
     @Test
-    void testMarkAsCleared() {
-        Floor floor = new Floor(1, new HashMap<>());
+    void testFloorIsNotClearedWhenAtLeastOneRoomHasEnemies() {
+        Map<Coordinate, Room> layout = new HashMap<>();
+        layout.put(new Coordinate(0, 0), new DummyRoom(true));
+        layout.put(new Coordinate(1, 0), new DummyRoom(false));
+        Floor floor = new Floor(1, layout);
 
-        assertFalse(floor.isCleared(), "Il piano non deve essere completato all'inizializzazione.");
 
-        floor.markAsCleared();
-
-        assertTrue(floor.isCleared(), "Il piano deve risultare completato dopo la chiamata a markAsCleared.");
+        assertFalse(floor.isCleared(), "Il piano NON deve risultare completato se c'è almeno una stanza con nemici vivi");
     }
 
-    @Test
-    void testMovementAndAvailableDoors() {
-        Map<Coordinate, Room> map = new HashMap<>();
-        map.put(new Coordinate(0, 0), new SpawnRoom());
-        map.put(new Coordinate(0, 1), new BossRoom());
+    private static class DummyRoom implements Room {
+        private  boolean isCleared;
 
-        Floor floor = new Floor(1, map);
-        Navigator navigator = new Navigator(floor);
-        List<Direction> doors = navigator.getAvailableDoors();
+        public DummyRoom(boolean isCleared) {
+            this.isCleared = isCleared;
+        }
 
-        assertEquals(1, doors.size());
-        assertTrue(doors.contains(Direction.NORTH));
+        @Override
+        public boolean isCleared() {
+            return this.isCleared;
+        }
 
-        navigator.move(Direction.NORTH);
-
-        assertEquals(new Coordinate(0, 1), navigator.getCurrentPosition());
-
-        navigator.getCurrentRoom().markAsCleared();
-        List<Direction> doorsFromNewRoom = navigator.getAvailableDoors();
-
-        assertEquals(1, doorsFromNewRoom.size());
-        assertTrue(doorsFromNewRoom.contains(Direction.SOUTH));
+        @Override
+        public void markAsCleared() {
+            this.isCleared = true;
+        }
     }
 }

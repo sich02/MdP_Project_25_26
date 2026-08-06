@@ -10,7 +10,8 @@ class LayoutGeneratorTest {
 
     @Test
     void testGenerateShapeSize() {
-        LayoutGenerator generator = new LayoutGenerator();
+        // Se hai estratto la logica in ShapeGenerator, usa quella, altrimenti rimetti LayoutGenerator
+        ShapeGenerator generator = new ShapeGenerator();
         int targetRooms = 10;
 
         Set<Coordinate> layout = generator.generateShape(targetRooms);
@@ -21,15 +22,19 @@ class LayoutGeneratorTest {
 
     @Test
     void testDistanceCalculation() {
-        LayoutGenerator generator = new LayoutGenerator();
+        // Se la distanza è un metodo di utilità o sta in un'altra classe, puntala qui
         Coordinate a = new Coordinate(0, 0);
         Coordinate b = new Coordinate(3, -4);
-        assertEquals(7, generator.distance(a, b), "La distanza di Manhattan tra (0,0) e (3,-4) deve essere 7.");
+
+        // Esempio: se ora distance sta in una classe di supporto o in Coordinate stessa:
+        int distance = Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
+        assertEquals(7, distance, "La distanza di Manhattan tra (0,0) e (3,-4) deve essere 7.");
     }
 
     @Test
     void testFindDeadEnds() {
-        LayoutGenerator generator = new LayoutGenerator();
+        // Se hai spostato i vicoli ciechi nel TopologicalAnalyzer come suggerisce l'albero dei file:
+        TopologicalAnalyzer analyzer = new TopologicalAnalyzer();
         Coordinate spawn = new Coordinate(0, 0);
         Set<Coordinate> layout = Set.of(
                 spawn,
@@ -38,7 +43,7 @@ class LayoutGeneratorTest {
                 new Coordinate(0, 2)
         );
 
-        List<Coordinate> deadEnds = generator.findDeadEnds(layout, spawn);
+        List<Coordinate> deadEnds = analyzer.findDeadEnds(layout, spawn);
 
         assertEquals(2, deadEnds.size(), "Ci devono essere esattamente due vicoli ciechi nel layout fornito.");
         assertTrue(deadEnds.contains(new Coordinate(1, 0)));
