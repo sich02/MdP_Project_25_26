@@ -1,6 +1,6 @@
 package it.unicam.cs.mpgc.rpg122423.dto;
 
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Direction;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 
 import java.util.List;
 

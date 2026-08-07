@@ -10,46 +10,67 @@ public class StandardEnemy implements Enemy {
     private final String name;
     private final int maxHp;
     private int currentHp;
-    private final EnemyBehavior behavior;
+    private final int baseDamage;
     private final List<StatusEffect> activeEffects;
     private EnemyAction nextAction;
 
-    public StandardEnemy(String name, int maxHp, EnemyBehavior behavior) {
+    public StandardEnemy(String name, int maxHp, int baseDamage) {
         this.name = name;
         this.maxHp = maxHp;
         this.currentHp = maxHp;
-        this.behavior = behavior;
+        this.baseDamage = baseDamage;
         this.activeEffects = new ArrayList<>();
-        this.prepareNextAction();
+        this.prepareNextAction(); // Prepara la prima mossa alla creazione
     }
 
     @Override
-    public String getName() {return name;}
+    public String getName() {
+        return name;
+    }
 
     @Override
-    public int getCurrentHp() {return currentHp;}
+    public int getCurrentHp() {
+        return currentHp;
+    }
 
     @Override
-    public int getMaxHp() {return maxHp;}
+    public int getMaxHp() {
+        return maxHp;
+    }
 
     @Override
-    public void takeDamage(int damage) {this.currentHp = Math.max(0, this.currentHp - damage);}
+    public void takeDamage(int damage) {
+        this.currentHp = Math.max(0, this.currentHp - damage);
+    }
 
     @Override
-    public boolean isDead() {return currentHp <= 0;}
+    public boolean isDead() {
+        return currentHp <= 0;
+    }
 
     @Override
-    public EnemyAction getNextAction() {return nextAction;}
+    public EnemyAction getNextAction() {
+        return nextAction;
+    }
 
     @Override
-    public void prepareNextAction() {this.nextAction = behavior.decideAction(this);}
+    public void prepareNextAction() {
+        // Logica interna pulita e diretta per generare la mossa del turno
+        this.nextAction = new EnemyAction(name + " attacca!", baseDamage, null);
+    }
 
     @Override
-    public void addStatusEffect(StatusEffect effect) {activeEffects.add(effect);}
+    public void addStatusEffect(StatusEffect effect) {
+        activeEffects.add(effect);
+    }
 
     @Override
-    public List<StatusEffect> getActiveEffects() {return List.copyOf(activeEffects);}
+    public List<StatusEffect> getActiveEffects() {
+        return List.copyOf(activeEffects);
+    }
 
     @Override
-    public void removeStatusEffect(StatusEffect effect) {activeEffects.remove(effect);}
+    public void removeStatusEffect(StatusEffect effect) {
+        activeEffects.remove(effect);
+    }
 }

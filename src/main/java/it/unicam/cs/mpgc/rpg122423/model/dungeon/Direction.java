@@ -1,4 +1,4 @@
-package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
+package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
 

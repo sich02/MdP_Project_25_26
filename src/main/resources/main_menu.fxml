@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="it.unicam.cs.mpgc.rpg122423.controller.MainMenuController"
+      spacing="20" alignment="CENTER" style="-fx-background-color: #2b2b2b;">
+
+    <Label text="RPG PROJECT" style="-fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 0 0 40 0;"/>
+
+    <Button text="Nuova Run" onAction="#handleNewRun" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+    <Button text="Continua" onAction="#handleContinue" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+    <Button text="Esci" onAction="#handleExit" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+
+</VBox>
