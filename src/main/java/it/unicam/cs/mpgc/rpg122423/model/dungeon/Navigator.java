@@ -19,8 +19,6 @@ public class Navigator {
 
     public boolean isDoorLocked(Direction direction) {
         Coordinate targetCoordinate = direction.applyTo(currentPosition);
-
-        // Risolve l'errore Optional: usiamo orElse(null) per estrarre il valore
         Room targetRoom = currentFloor.getRoomAt(targetCoordinate).orElse(null);
 
         return targetRoom instanceof Lockable targetLockable && targetLockable.isLocked();
@@ -38,7 +36,6 @@ public class Navigator {
     public boolean move(Direction direction) {
         Room currentRoom = currentFloor.getRoomAt(currentPosition).orElse(null);
 
-        // Controllo di sicurezza aggiunto per l'Optional spacchettato
         if (currentRoom == null || !currentRoom.isCleared()) return false;
 
         Coordinate targetCoordinate = direction.applyTo(currentPosition);
@@ -50,12 +47,12 @@ public class Navigator {
         return true;
     }
 
-    /**
-     * Restituisce la lista delle direzioni in cui esiste una stanza adiacente
-     * raggiungibile dalla posizione corrente.
-     */
     public List<Direction> getAvailableDoors() {
         List<Direction> availableDoors = new ArrayList<>();
+        Room currentRoom = currentFloor.getRoomAt(currentPosition).orElse(null);
+        if (currentRoom != null && !currentRoom.isCleared()) {
+            return availableDoors;
+        }
 
         for (Direction direction : Direction.values()) {
             Coordinate targetCoordinate = direction.applyTo(currentPosition);

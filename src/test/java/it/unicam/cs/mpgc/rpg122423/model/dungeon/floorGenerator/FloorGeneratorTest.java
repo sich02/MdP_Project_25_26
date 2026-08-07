@@ -12,13 +12,11 @@ class FloorGeneratorTest {
     @Test
     void testRoomCountAndSpawnPlacement() {
         FloorGenerator generator = new FloorGenerator();
-        int floorNumber = 1;
 
-        // Formula: 5 + (1 * 2) = 7
-        Floor generatedFloor = generator.generateFloor(floorNumber);
+        Floor generatedFloor = generator.generateFloor(1);
         Map<Coordinate, Room> floorMap = generatedFloor.getRooms();
 
-        assertEquals(7, floorMap.size(), "Al piano 1 devono esserci esattamente 7 stanze in base alla formula.");
+        assertTrue(floorMap.size() == 8 || floorMap.size() == 9, "Al piano 1 devono esserci 8 o 9 stanze in base alla formula randomica.");
         assertInstanceOf(SpawnRoom.class, floorMap.get(new Coordinate(0, 0)), "Alle coordinate (0,0) deve esserci tassativamente la SpawnRoom.");
     }
 
@@ -26,34 +24,36 @@ class FloorGeneratorTest {
     void testSpecialRoomsPresence() {
         FloorGenerator generator = new FloorGenerator();
 
-        Floor generatedFloor = generator.generateFloor(3); // Testiamo su un piano profondo per avere abbastanza stanze
+        Floor generatedFloor = generator.generateFloor(3);
         Map<Coordinate, Room> floorMap = generatedFloor.getRooms();
 
         long bossCount = floorMap.values().stream().filter(r -> r instanceof BossRoom).count();
         long shopCount = floorMap.values().stream().filter(r -> r instanceof ShopRoom).count();
         long treasureCount = floorMap.values().stream().filter(r -> r instanceof TreasureRoom).count();
 
-        assertEquals(1, bossCount, "Deve esserci generata esattamente una BossRoom.");
-        assertEquals(1, shopCount, "Deve esserci generata esattamente una ShopRoom.");
-        assertEquals(1, treasureCount, "Deve esserci generata esattamente una TreasureRoom.");
+        assertEquals(1, bossCount, "Deve esserci generata sempre esattamente una BossRoom.");
+        assertTrue(shopCount <= 1, "La ShopRoom viene generata solo se c'è un vicolo cieco disponibile (max 1).");
+        assertTrue(treasureCount <= 1, "La TreasureRoom viene generata solo se c'è un vicolo cieco disponibile (max 1).");
     }
 
     @Test
     void testTreasureRoomLockLogicByFloor() {
         FloorGenerator generator = new FloorGenerator();
-
-        Map<Coordinate, Room> floor1 = generator.generateFloor(1).getRooms();
-        TreasureRoom tRoom1 = (TreasureRoom) floor1.values().stream()
-                .filter(r -> r instanceof TreasureRoom).findFirst()
-                .orElseThrow(() -> new AssertionError("TreasureRoom mancante al piano 1"));
-
+        TreasureRoom tRoom1 = null;
+        while (tRoom1 == null) {
+            Map<Coordinate, Room> floor1 = generator.generateFloor(1).getRooms();
+            tRoom1 = (TreasureRoom) floor1.values().stream()
+                    .filter(r -> r instanceof TreasureRoom).findFirst().orElse(null);
+        }
         assertFalse(tRoom1.isLocked(), "Al piano 1 la TreasureRoom non deve MAI richiedere una chiave.");
 
-        Map<Coordinate, Room> floor2 = generator.generateFloor(2).getRooms();
-        TreasureRoom tRoom2 = (TreasureRoom) floor2.values().stream()
-                .filter(r -> r instanceof TreasureRoom).findFirst()
-                .orElseThrow(() -> new AssertionError("TreasureRoom mancante al piano 2"));
-
+        // Stessa cosa per il piano 2
+        TreasureRoom tRoom2 = null;
+        while (tRoom2 == null) {
+            Map<Coordinate, Room> floor2 = generator.generateFloor(2).getRooms();
+            tRoom2 = (TreasureRoom) floor2.values().stream()
+                    .filter(r -> r instanceof TreasureRoom).findFirst().orElse(null);
+        }
         assertTrue(tRoom2.isLocked(), "Dal piano 2 in poi la TreasureRoom DEVE richiedere una chiave.");
     }
 }

@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -15,13 +16,13 @@ class FloorTest {
     @Test
     void testGetRoomAtReturnsOptionalWithRoom() {
         Map<Coordinate, Room> layout = new HashMap<>();
-        Coordinate spawnCoord = new Coordinate(0, 0);
+        Coordinate testCoord = new Coordinate(1, 0);
         Room dummyRoom = new DummyRoom(true);
-        layout.put(spawnCoord, dummyRoom);
+        layout.put(testCoord, dummyRoom);
         Floor floor = new Floor(1, layout);
-        Optional<Room> retrievedRoom = floor.getRoomAt(new Coordinate(0, 0));
+        Optional<Room> retrievedRoom = floor.getRoomAt(testCoord);
 
-        assertTrue(retrievedRoom.isPresent(), "La stanza dovrebbe essere presente alle coordinate (0,0)");
+        assertTrue(retrievedRoom.isPresent(), "La stanza dovrebbe essere presente alle coordinate " + testCoord);
         assertEquals(dummyRoom, retrievedRoom.get(), "La stanza estratta deve essere esattamente quella inserita nel layout");
     }
 
@@ -35,27 +36,30 @@ class FloorTest {
     }
 
     @Test
-    void testFloorIsClearedWhenAllRoomsAreCleared() {
+    void testFloorIsClearedOnlyWhenMarked() {
         Map<Coordinate, Room> layout = new HashMap<>();
-        layout.put(new Coordinate(0, 0), new DummyRoom(true));
-        layout.put(new Coordinate(1, 0), new DummyRoom(true));
         Floor floor = new Floor(1, layout);
-        assertTrue(floor.isCleared(), "Il piano deve risultare completato se tutte le stanze lo sono");
+
+        assertFalse(floor.isCleared(), "Appena creato, il piano non deve risultare completato");
+
+        floor.markAsCleared();
+
+        assertTrue(floor.isCleared(), "Il piano deve risultare completato dopo aver chiamato markAsCleared()");
     }
 
     @Test
-    void testFloorIsNotClearedWhenAtLeastOneRoomHasEnemies() {
+    void testConstructorForcesSpawnRoomAtOrigin() {
         Map<Coordinate, Room> layout = new HashMap<>();
-        layout.put(new Coordinate(0, 0), new DummyRoom(true));
-        layout.put(new Coordinate(1, 0), new DummyRoom(false));
         Floor floor = new Floor(1, layout);
 
+        Optional<Room> spawnResult = floor.getRoomAt(new Coordinate(0, 0));
 
-        assertFalse(floor.isCleared(), "Il piano NON deve risultare completato se c'è almeno una stanza con nemici vivi");
+        assertTrue(spawnResult.isPresent(), "Deve sempre esistere una stanza a (0,0)");
+        assertInstanceOf(SpawnRoom.class, spawnResult.get(), "La stanza a (0,0) deve essere forzatamente una SpawnRoom");
     }
 
     private static class DummyRoom implements Room {
-        private  boolean isCleared;
+        private boolean isCleared;
 
         public DummyRoom(boolean isCleared) {
             this.isCleared = isCleared;

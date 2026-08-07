@@ -15,7 +15,6 @@ class NavigatorTest {
 
     @Test
     void testNavigationAndLocking() {
-        // 1. Setup topologia
         Map<Coordinate, Room> map = new HashMap<>();
         map.put(new Coordinate(0, 0), new SpawnRoom());
         CombatRoom hostileRoom = new CombatRoom(false);
