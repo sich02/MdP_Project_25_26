@@ -1,6 +1,6 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.Coordinate;
+import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
 
 public enum Direction {
     NORTH(0, 1),

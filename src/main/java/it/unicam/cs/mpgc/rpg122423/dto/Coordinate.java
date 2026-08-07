@@ -1,4 +1,4 @@
-package it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator;
+package it.unicam.cs.mpgc.rpg122423.dto;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Direction;
 
