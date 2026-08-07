@@ -1,5 +1,7 @@
 package it.unicam.cs.mpgc.rpg122423.model.dice;
 
+import it.unicam.cs.mpgc.rpg122423.dto.RollResult;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,14 @@ public class DicePool {
             values.add(dice.getCurrentValue());
         }
         return new RollResult(values);
+    }
+
+    public void rollSpecific(List<Integer> indices) {
+        for (Integer index : indices) {
+            if (index >= 0 && index < diceList.size()) {
+                diceList.get(index).roll();
+            }
+        }
     }
 
     public int getSize(){

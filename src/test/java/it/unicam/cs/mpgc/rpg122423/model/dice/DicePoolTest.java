@@ -1,5 +1,6 @@
 package it.unicam.cs.mpgc.rpg122423.model.dice;
 
+import it.unicam.cs.mpgc.rpg122423.dto.RollResult;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

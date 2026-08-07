@@ -1,6 +1,6 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator.FloorGenerator;
+import it.unicam.cs.mpgc.rpg122423.service.dungeon.FloorGenerator;
 
 public class Dungeon {
     private final FloorGenerator floorGenerator;

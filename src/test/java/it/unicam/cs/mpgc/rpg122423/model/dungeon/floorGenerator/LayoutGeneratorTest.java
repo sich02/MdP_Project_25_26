@@ -1,5 +1,8 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator;
 
+import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
+import it.unicam.cs.mpgc.rpg122423.service.dungeon.ShapeGenerator;
+import it.unicam.cs.mpgc.rpg122423.service.dungeon.TopologicalAnalyzer;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;

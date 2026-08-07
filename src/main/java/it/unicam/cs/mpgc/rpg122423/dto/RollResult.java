@@ -1,4 +1,4 @@
-package it.unicam.cs.mpgc.rpg122423.model.dice;
+package it.unicam.cs.mpgc.rpg122423.dto;
 
 import java.util.List;
 

@@ -1,4 +1,6 @@
-package it.unicam.cs.mpgc.rpg122423.model.dungeon.floorGenerator;
+package it.unicam.cs.mpgc.rpg122423.service.dungeon;
+
+import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
 
 import java.util.*;
 
