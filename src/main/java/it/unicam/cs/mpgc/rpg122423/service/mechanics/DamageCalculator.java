@@ -4,5 +4,7 @@ import it.unicam.cs.mpgc.rpg122423.dto.Combo;
 
 public class DamageCalculator {
 
-    public int calculateComboDamage(Combo combo) {return combo.totalDamage();}
+    public int calculateComboDamage(Combo combo) {
+        return combo.totalDamage();
+    }
 }

@@ -15,13 +15,20 @@ public class BattleController {
     private boolean dodgeWindowActive = false;
     private boolean playerDodged = false;
 
-    @FXML private Label playerHpLabel;
-    @FXML private Label enemyHpLabel;
-    @FXML private Label phaseLabel;
-    @FXML private Label rerollCountLabel;
-    @FXML private Button rollButton;
-    @FXML private Button rerollButton;
-    @FXML private Button attackButton;
+    @FXML
+    private Label playerHpLabel;
+    @FXML
+    private Label enemyHpLabel;
+    @FXML
+    private Label phaseLabel;
+    @FXML
+    private Label rerollCountLabel;
+    @FXML
+    private Button rollButton;
+    @FXML
+    private Button rerollButton;
+    @FXML
+    private Button attackButton;
 
     public void initBattle(Battle battle) {
         this.battle = battle;
