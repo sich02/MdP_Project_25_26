@@ -51,7 +51,7 @@ public class LayoutGenerator {
 
         for (Coordinate coord : shape) {
             boolean generatesLoot = random.nextBoolean();
-            layout.putIfAbsent(coord, new CombatRoom(generatesLoot));
+            layout.putIfAbsent(coord, new CombatRoom(generatesLoot, floorNumber));
         }
 
         return layout;

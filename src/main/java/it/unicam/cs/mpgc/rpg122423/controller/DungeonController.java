@@ -7,12 +7,16 @@ import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService;
 
+import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
+import java.util.Random;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
@@ -27,8 +31,12 @@ public class DungeonController {
     private ImageView playerSprite;
     private final DungeonService dungeonService = new DungeonService();
 
-    // Memoria per sapere da quale porta è appena entrato il giocatore
     private Direction lastEntryDirection = null;
+
+    // --- MEMORIA DI STATO DEL COMBATTIMENTO ---
+    private boolean hasPlayerRolled = false;
+    private boolean hasPlayerAttacked = false;
+    private int currentDiceRoll = 1;
 
     @FXML
     public void initialize() {
@@ -48,13 +56,14 @@ public class DungeonController {
         renderDoor(roomData.east(), Direction.EAST);
         renderDoor(roomData.west(), Direction.WEST);
 
-        spawnEnemy(roomData.enemy());
+        spawnEnemies(roomData.enemies());
         spawnPlayer();
 
         PlayerDTO playerStats = dungeonService.getPlayerData();
         hpLabel.setText("Cuori: " + playerStats.currentHearts() + " / " + playerStats.maxHearts());
         goldLabel.setText("Oro: " + playerStats.gold());
         keysLabel.setText("Chiavi: " + playerStats.keys());
+        renderCombatUI(roomData);
     }
 
     private void renderFloor() {
@@ -74,43 +83,65 @@ public class DungeonController {
         }
     }
 
-    private void spawnEnemy(EnemyDTO enemy) {
-        if (enemy == null) return;
+    private void spawnEnemies(java.util.List<EnemyDTO> enemies) {
+        if (enemies == null || enemies.isEmpty()) return;
 
-        // Rimpicciolito per essere proporzionato al player!
         double enemySize = 45;
 
+        double centerX = (600 / 2.0) - (enemySize / 2.0);
+        double centerY = (400 / 2.0) - (enemySize / 2.0);
+
+        double[][] positions = {
+                {centerX, centerY},
+                {centerX - 120, centerY - 80},
+                {centerX + 120, centerY - 80},
+                {centerX - 120, centerY + 80},
+                {centerX + 120, centerY + 80}
+        };
+
         try {
-            Image img = new Image(getClass().getResourceAsStream("/assets/Black_Bony_Afterbirth.png"));
-            ImageView enemySprite = new ImageView(img);
-            enemySprite.setFitWidth(enemySize);
-            enemySprite.setPreserveRatio(true);
-            enemySprite.setSmooth(false);
+            for (int i = 0; i < enemies.size(); i++) {
+                EnemyDTO enemy = enemies.get(i);
 
-            // Posizioniamolo al centro esatto (il player ora nasce sui bordi)
-            double enemyX = (600 / 2) - (enemySize / 2);
-            double enemyY = (400 / 2) - (enemySize / 2);
+                String spriteName = switch (enemy.name()) {
+                    case "Black Bony" -> "Black_Bony_Afterbirth.png";
+                    case "Black Globin" -> "Black_Globin.png";
+                    case "Black Knight" -> "Black_Knight.png";
+                    case "Blood Cultist" -> "Blood_Cultist.png";
+                    case "Coal Boy" -> "Coal_Boy.png";
+                    case "Cultist" -> "Cultist.png";
+                    default -> "Black_Bony_Afterbirth.png";
+                };
 
-            enemySprite.setX(enemyX);
-            enemySprite.setY(enemyY);
+                Image img = new Image(getClass().getResourceAsStream("/assets/" + spriteName));
+                ImageView enemySprite = new ImageView(img);
 
-            roomPane.getChildren().add(enemySprite);
+                enemySprite.setFitWidth(enemySize);
+                enemySprite.setPreserveRatio(true);
+                enemySprite.setSmooth(false);
 
-            // UI DEL NEMICO (riposizionata in base alle nuove dimensioni)
-            Label hpText = new Label("HP: " + enemy.currentHp() + "/" + enemy.maxHp());
-            hpText.setStyle("-fx-text-fill: #ff4c4c; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
-            hpText.setLayoutX(enemyX - 5);
-            hpText.setLayoutY(enemyY - 15);
+                double enemyX = positions[i][0];
+                double enemyY = positions[i][1];
 
-            Label intentText = new Label(enemy.intentDescription());
-            intentText.setStyle("-fx-text-fill: #fcdb03; -fx-font-family: 'Courier New'; -fx-font-size: 12px;");
-            intentText.setLayoutX(enemyX - 25);
-            intentText.setLayoutY(enemyY - 30);
+                enemySprite.setX(enemyX);
+                enemySprite.setY(enemyY);
+                roomPane.getChildren().add(enemySprite);
 
-            roomPane.getChildren().addAll(hpText, intentText);
+                Label hpText = new Label("HP: " + enemy.currentHp() + "/" + enemy.maxHp());
+                hpText.setStyle("-fx-text-fill: #ff4c4c; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
+                hpText.setLayoutX(enemyX - 5);
+                hpText.setLayoutY(enemyY - 15);
+
+                Label intentText = new Label(enemy.intentDescription());
+                intentText.setStyle("-fx-text-fill: #fcdb03; -fx-font-family: 'Courier New'; -fx-font-size: 10px;");
+                intentText.setLayoutX(enemyX - 25);
+                intentText.setLayoutY(enemyY - 30);
+
+                roomPane.getChildren().addAll(hpText, intentText);
+            }
 
         } catch (Exception e) {
-            System.out.println("Impossibile caricare lo sprite del nemico: /assets/Black_Bony_Afterbirth.png");
+            System.out.println("Impossibile caricare lo sprite del nemico");
         }
     }
 
@@ -126,21 +157,15 @@ public class DungeonController {
 
             double roomWidth = 600;
             double roomHeight = 400;
-
-            // Coordinate di default (Centro per la SpawnRoom)
             double spawnX = (roomWidth / 2) - (playerSize / 2);
             double spawnY = (roomHeight / 2) - (playerSize / 2);
-
-            // Distanza dal bordo del muro quando si esce da una porta
             double padding = 50;
-
-            // Se ci siamo mossi, nasciamo davanti alla porta corrispondente!
             if (lastEntryDirection != null) {
                 switch (lastEntryDirection) {
-                    case NORTH -> spawnY = roomHeight - playerSize - padding + 20; // Andati a nord -> Entrati da Sud
-                    case SOUTH -> spawnY = padding - 20;                           // Andati a sud -> Entrati da Nord
-                    case EAST -> spawnX = padding - 20;                            // Andati a est -> Entrati da Ovest
-                    case WEST -> spawnX = roomWidth - playerSize - padding + 20;   // Andati a ovest -> Entrati da Est
+                    case NORTH -> spawnY = roomHeight - playerSize - padding + 20;
+                    case SOUTH -> spawnY = padding - 20;
+                    case EAST -> spawnX = padding - 20;
+                    case WEST -> spawnX = roomWidth - playerSize - padding + 20;
                 }
             }
 
@@ -157,7 +182,6 @@ public class DungeonController {
         }
     }
 
-    // ... [Metodi renderDoor identici a prima] ...
     private void renderDoor(DoorDTO doorInfo, Direction dir) {
         if (!doorInfo.exists()) return;
         double doorSize = 60;
@@ -219,11 +243,93 @@ public class DungeonController {
 
     private void tryMove(Direction dir) {
         if (dungeonService.interactWithDirection(dir)) {
-            // Aggiorniamo la memoria con la direzione appena presa!
             lastEntryDirection = dir;
+            // AZZERA LA MEMORIA DEI TURNI QUANDO CAMBI STANZA
+            hasPlayerRolled = false;
+            hasPlayerAttacked = false;
+            currentDiceRoll = 1;
             updateView();
         } else {
             System.out.println("Muro colpito, nemico vivo o chiave mancante!");
         }
+    }
+
+    private void renderCombatUI(RoomDTO roomData) {
+        if (roomData.enemies() == null || roomData.enemies().isEmpty()) return;
+
+        VBox combatMenu = new VBox(10);
+        combatMenu.setLayoutX(20);
+        combatMenu.setLayoutY(20);
+
+        if ("ENEMY_TURN".equals(roomData.combatPhase())) {
+            Button nextEnemyBtn = new Button("▶ Ricevi Attacchi dai Nemici");
+            nextEnemyBtn.setStyle("-fx-background-color: #ff4c4c; -fx-text-fill: white; -fx-font-weight: bold;");
+
+            nextEnemyBtn.setOnAction(e -> {
+                dungeonService.executeAllEnemyTurns();
+                // IL TURNO TORNA AL PLAYER: RESETTIAMO LE SUE AZIONI
+                hasPlayerRolled = false;
+                hasPlayerAttacked = false;
+                updateView();
+            });
+
+            combatMenu.getChildren().add(nextEnemyBtn);
+
+        } else {
+            HBox diceBox = new HBox(10);
+
+            ImageView diceSprite = new ImageView();
+            diceSprite.setFitWidth(40);
+            diceSprite.setFitHeight(40);
+            diceSprite.setPreserveRatio(true);
+            diceSprite.setSmooth(false);
+
+            // LEGGE DALLA MEMORIA QUALE DADO MOSTRARE
+            String diceImageName = switch (currentDiceRoll) {
+                case 1 -> "perspective-dice-six-faces-one.png";
+                case 2 -> "perspective-dice-six-faces-two.png";
+                case 3 -> "perspective-dice-six-faces-three.png";
+                case 4 -> "perspective-dice-six-faces-four.png";
+                case 5 -> "perspective-dice-six-faces-five.png";
+                case 6 -> "perspective-dice-six-faces-six.png";
+                default -> "perspective-dice-six-faces-one.png";
+            };
+            diceSprite.setImage(new Image(getClass().getResourceAsStream("/assets/" + diceImageName)));
+
+            Button rollBtn = new Button("🎲 Tira il Dado");
+            String attackText = hasPlayerRolled ? "⚔ Attacca (" + currentDiceRoll + " Danni)" : "⚔ Attacca";
+            Button attackBtn = new Button(attackText);
+            Button endTurnBtn = new Button("⧖ Fine Turno");
+
+            rollBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
+            attackBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
+
+            // LA MAGIA DEI PULSANTI: LEGGE LA MEMORIA DI STATO
+            rollBtn.setDisable(hasPlayerRolled);
+            attackBtn.setDisable(!hasPlayerRolled || hasPlayerAttacked);
+            endTurnBtn.setDisable(!hasPlayerAttacked);
+
+            rollBtn.setOnAction(e -> {
+                currentDiceRoll = new Random().nextInt(6) + 1;
+                hasPlayerRolled = true;
+                updateView();
+            });
+
+            attackBtn.setOnAction(e -> {
+                dungeonService.executePlayerAttack(currentDiceRoll);
+                hasPlayerAttacked = true;
+                updateView();
+            });
+
+            endTurnBtn.setOnAction(e -> {
+                dungeonService.endPlayerTurn();
+                updateView();
+            });
+
+            diceBox.getChildren().addAll(diceSprite, rollBtn);
+            combatMenu.getChildren().addAll(diceBox, attackBtn, endTurnBtn);
+        }
+
+        roomPane.getChildren().add(combatMenu);
     }
 }

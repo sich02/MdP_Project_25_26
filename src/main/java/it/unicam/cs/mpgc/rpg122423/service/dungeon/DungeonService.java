@@ -5,13 +5,16 @@ import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.DungeonLevel;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Floor;
 import it.unicam.cs.mpgc.rpg122423.model.combat.Player;
+import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
+
+import java.util.List;
+import java.util.ArrayList;
 
 public class DungeonService {
     private DungeonLevel currentLevel;
     private final FloorGenerator generator;
     private Player player;
-
 
     private int currentFloorNumber = 1;
 
@@ -36,33 +39,36 @@ public class DungeonService {
     public RoomDTO getCurrentRoomData() {
         if (currentLevel == null) throw new IllegalStateException("Livello non inizializzato");
         Coordinate currentPos = currentLevel.getCurrentPosition();
-
-        // Recuperiamo la stanza in cui si trova il player in questo momento
         Room currentRoom = currentLevel.getCurrentRoom();
 
-        EnemyDTO enemyDTO = null;
+        List<EnemyDTO> enemyDTOs = new ArrayList<>();
 
-        // Se la stanza è una CombatRoom, estraiamo i dati del nemico
+        // Se la stanza è una CombatRoom, riempiamo la lista
         if (currentRoom instanceof CombatRoom cr) {
-            // Usa l'import corretto per Enemy: it.unicam.cs.mpgc.rpg122423.model.combat.Enemy
-            var enemy = cr.getEnemy();
-            if (enemy != null && !enemy.isDead()) {
-                enemyDTO = new EnemyDTO(
-                        enemy.getName(),
-                        enemy.getCurrentHp(),
-                        enemy.getMaxHp(),
-                        enemy.getNextAction().description()
-                );
+            for (var enemy : cr.getEnemies()) {
+                if (!enemy.isDead()) {
+                    enemyDTOs.add(new EnemyDTO(
+                            enemy.getName(),
+                            enemy.getCurrentHp(),
+                            enemy.getMaxHp(),
+                            enemy.getNextAction().description()
+                    ));
+                }
             }
         }
 
-        // Ora passiamo TUTTI E 5 i parametri, risolvendo l'errore!
+        String phase = "NONE";
+        if (currentRoom instanceof CombatRoom cr && !cr.isCleared()) {
+            phase = cr.getCurrentPhase().name();
+        }
+
         return new RoomDTO(
                 inspectDoor(currentPos, Direction.NORTH),
                 inspectDoor(currentPos, Direction.SOUTH),
                 inspectDoor(currentPos, Direction.EAST),
                 inspectDoor(currentPos, Direction.WEST),
-                enemyDTO // <-- Il 5° parametro che mancava!
+                enemyDTOs,
+                phase
         );
     }
 
@@ -94,19 +100,16 @@ public class DungeonService {
     public boolean interactWithDirection(Direction dir) {
         Room currentRoom = currentLevel.getCurrentRoom();
         if (currentRoom instanceof CombatRoom cr) {
-            if (cr.getEnemy() != null && !cr.getEnemy().isDead()) {
-                System.out.println("Le porte sono bloccate! Devi sconfiggere il nemico prima di poter proseguire!");
+            if (!cr.isCleared()) {
+                System.out.println("Le porte sono bloccate! Devi sconfiggere l'orda prima di poter proseguire!");
                 return false;
             }
         }
 
-
         Coordinate targetPos = currentLevel.getCurrentPosition().moveTo(dir);
         Room adjacentRoom = currentLevel.getRoomAt(targetPos);
 
-
         if (adjacentRoom == null) return false;
-
 
         if (adjacentRoom instanceof Lockable lockableRoom && lockableRoom.isLocked()) {
             if (player.getKeys() > 0) {
@@ -129,5 +132,54 @@ public class DungeonService {
                 player.getGold(),
                 player.getKeys()
         );
+    }
+
+    // --- NUOVI METODI: GESTIONE TURNI COMBATTIMENTO ---
+
+    public void endPlayerTurn() {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof CombatRoom cr && !cr.isCleared()) {
+            cr.setPhase(TurnPhase.ENEMY_TURN);
+            cr.resetEnemyTurnIndex(); // Si riparte dal primo nemico
+            System.out.println("Turno del giocatore terminato. Inizia il turno dei nemici.");
+        }
+    }
+
+    public void executeAllEnemyTurns() {
+        Room currentRoom = currentLevel.getCurrentRoom();
+
+        if (!(currentRoom instanceof CombatRoom cr) || cr.getCurrentPhase() != TurnPhase.ENEMY_TURN) {
+            return;
+        }
+
+        // Filtriamo i nemici e li facciamo attaccare tutti in un solo colpo
+        List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
+                cr.getEnemies().stream()
+                        .filter(e -> !e.isDead())
+                        .toList();
+
+        for (var enemy : aliveEnemies) {
+            var action = enemy.getNextAction();
+            player.takeDamage(action.damage());
+            System.out.println(enemy.getName() + " ti attacca e infligge danno!");
+            enemy.prepareNextAction();
+        }
+
+        // Finito il massacro, la palla torna al Player!
+        cr.setPhase(TurnPhase.INITIAL_ROLL);
+    }
+
+    public void executePlayerAttack(int damage) {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() != TurnPhase.ENEMY_TURN && !cr.isCleared()) {
+
+            // Trova il primo bersaglio vivo
+            var target = cr.getEnemies().stream().filter(e -> !e.isDead()).findFirst().orElse(null);
+
+            if (target != null) {
+                target.takeDamage(damage);
+                System.out.println("Hai inflitto " + damage + " danni a " + target.getName() + "!");
+            }
+        }
     }
 }
