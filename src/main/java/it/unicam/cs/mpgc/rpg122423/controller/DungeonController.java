@@ -7,6 +7,9 @@ import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService;
 
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
+
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import java.util.Random;
@@ -36,7 +39,7 @@ public class DungeonController {
     // --- MEMORIA DI STATO DEL COMBATTIMENTO ---
     private boolean hasPlayerRolled = false;
     private boolean hasPlayerAttacked = false;
-    private int currentDiceRoll = 1;
+    private int[] currentDiceRolls = {1, 1, 1, 1, 1};
 
     @FXML
     public void initialize() {
@@ -46,6 +49,14 @@ public class DungeonController {
     }
 
     private void updateView() {
+        PlayerDTO playerStats = dungeonService.getPlayerData();
+
+        if (playerStats.currentHearts() <= 0) {
+            hpLabel.setText("Cuori: 0.0 / " + playerStats.maxHearts());
+            showGameOverScreen();
+            return;
+        }
+
         RoomDTO roomData = dungeonService.getCurrentRoomData();
 
         roomPane.getChildren().clear();
@@ -59,11 +70,39 @@ public class DungeonController {
         spawnEnemies(roomData.enemies());
         spawnPlayer();
 
-        PlayerDTO playerStats = dungeonService.getPlayerData();
         hpLabel.setText("Cuori: " + playerStats.currentHearts() + " / " + playerStats.maxHearts());
         goldLabel.setText("Oro: " + playerStats.gold());
         keysLabel.setText("Chiavi: " + playerStats.keys());
+
         renderCombatUI(roomData);
+    }
+
+    private void showGameOverScreen() {
+        roomPane.getChildren().clear();
+
+        Rectangle bg = new Rectangle(600, 400, Color.BLACK);
+
+        Label deathLabel = new Label("SEI MORTO");
+        deathLabel.setStyle("-fx-text-fill: #ff4c4c; -fx-font-size: 60px; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
+        deathLabel.setLayoutX(130);
+        deathLabel.setLayoutY(120);
+
+        Button restartBtn = new Button("Ricomincia Partita");
+        restartBtn.setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-font-size: 18px; -fx-font-weight: bold;");
+        restartBtn.setLayoutX(200);
+        restartBtn.setLayoutY(220);
+
+        restartBtn.setOnAction(e -> {
+            hasPlayerRolled = false;
+            hasPlayerAttacked = false;
+            currentDiceRolls = new int[]{1, 1, 1, 1, 1};
+            lastEntryDirection = null;
+
+            dungeonService.startNewRun();
+            updateView();
+        });
+
+        roomPane.getChildren().addAll(bg, deathLabel, restartBtn);
     }
 
     private void renderFloor() {
@@ -87,7 +126,6 @@ public class DungeonController {
         if (enemies == null || enemies.isEmpty()) return;
 
         double enemySize = 45;
-
         double centerX = (600 / 2.0) - (enemySize / 2.0);
         double centerY = (400 / 2.0) - (enemySize / 2.0);
 
@@ -102,7 +140,6 @@ public class DungeonController {
         try {
             for (int i = 0; i < enemies.size(); i++) {
                 EnemyDTO enemy = enemies.get(i);
-
                 String spriteName = switch (enemy.name()) {
                     case "Black Bony" -> "Black_Bony_Afterbirth.png";
                     case "Black Globin" -> "Black_Globin.png";
@@ -115,14 +152,12 @@ public class DungeonController {
 
                 Image img = new Image(getClass().getResourceAsStream("/assets/" + spriteName));
                 ImageView enemySprite = new ImageView(img);
-
                 enemySprite.setFitWidth(enemySize);
                 enemySprite.setPreserveRatio(true);
                 enemySprite.setSmooth(false);
 
                 double enemyX = positions[i][0];
                 double enemyY = positions[i][1];
-
                 enemySprite.setX(enemyX);
                 enemySprite.setY(enemyY);
                 roomPane.getChildren().add(enemySprite);
@@ -139,7 +174,6 @@ public class DungeonController {
 
                 roomPane.getChildren().addAll(hpText, intentText);
             }
-
         } catch (Exception e) {
             System.out.println("Impossibile caricare lo sprite del nemico");
         }
@@ -168,10 +202,8 @@ public class DungeonController {
                     case WEST -> spawnX = roomWidth - playerSize - padding + 20;
                 }
             }
-
             playerSprite.setX(spawnX);
             playerSprite.setY(spawnY);
-
             roomPane.getChildren().add(playerSprite);
         } catch (Exception e) {
             System.out.println("Impossibile caricare lo sprite, uso placeholder.");
@@ -189,10 +221,8 @@ public class DungeonController {
 
         switch (doorInfo.roomType()) {
             case "BOSS" -> imagePath = "/assets/boosRoom Opened.png";
-            case "TREASURE" -> imagePath = doorInfo.isLocked() ?
-                    "/assets/treasure locked.png" : "/assets/treasure opened.png";
-            case "SHOP" -> imagePath = doorInfo.isLocked() ?
-                    "/assets/shop locked.png" : "/assets/shop opened.png";
+            case "TREASURE" -> imagePath = doorInfo.isLocked() ? "/assets/treasure locked.png" : "/assets/treasure opened.png";
+            case "SHOP" -> imagePath = doorInfo.isLocked() ? "/assets/shop locked.png" : "/assets/shop opened.png";
         }
 
         try {
@@ -204,31 +234,13 @@ public class DungeonController {
 
             double roomWidth = 600;
             double roomHeight = 400;
-            double offsetNorth = -5;
-            double offsetSouth = 20;
-            double offsetEast = 15;
-            double offsetWest = -15;
+            double offsetNorth = -5, offsetSouth = 20, offsetEast = 15, offsetWest = -15;
 
             switch (dir) {
-                case NORTH -> {
-                    doorSprite.setX((roomWidth / 2) - (doorSize / 2));
-                    doorSprite.setY(offsetNorth);
-                }
-                case SOUTH -> {
-                    doorSprite.setX((roomWidth / 2) - (doorSize / 2));
-                    doorSprite.setY(roomHeight - doorSize + offsetSouth);
-                    doorSprite.setRotate(180);
-                }
-                case EAST -> {
-                    doorSprite.setX(roomWidth - doorSize + offsetEast);
-                    doorSprite.setY((roomHeight / 2) - (doorSize / 2));
-                    doorSprite.setRotate(90);
-                }
-                case WEST -> {
-                    doorSprite.setX(offsetWest);
-                    doorSprite.setY((roomHeight / 2) - (doorSize / 2));
-                    doorSprite.setRotate(270);
-                }
+                case NORTH -> { doorSprite.setX((roomWidth / 2) - (doorSize / 2)); doorSprite.setY(offsetNorth); }
+                case SOUTH -> { doorSprite.setX((roomWidth / 2) - (doorSize / 2)); doorSprite.setY(roomHeight - doorSize + offsetSouth); doorSprite.setRotate(180); }
+                case EAST -> { doorSprite.setX(roomWidth - doorSize + offsetEast); doorSprite.setY((roomHeight / 2) - (doorSize / 2)); doorSprite.setRotate(90); }
+                case WEST -> { doorSprite.setX(offsetWest); doorSprite.setY((roomHeight / 2) - (doorSize / 2)); doorSprite.setRotate(270); }
             }
             roomPane.getChildren().add(doorSprite);
         } catch (Exception e) {
@@ -244,79 +256,113 @@ public class DungeonController {
     private void tryMove(Direction dir) {
         if (dungeonService.interactWithDirection(dir)) {
             lastEntryDirection = dir;
-            // AZZERA LA MEMORIA DEI TURNI QUANDO CAMBI STANZA
             hasPlayerRolled = false;
             hasPlayerAttacked = false;
-            currentDiceRoll = 1;
+            currentDiceRolls = new int[]{1, 1, 1, 1, 1};
             updateView();
         } else {
             System.out.println("Muro colpito, nemico vivo o chiave mancante!");
         }
     }
 
-    private void renderCombatUI(RoomDTO roomData) {
-        if (roomData.enemies() == null || roomData.enemies().isEmpty()) return;
+    private void startEnemyTurnSequence() {
+        PauseTransition pause = new PauseTransition(Duration.seconds(1));
+        pause.setOnFinished(e -> {
+            if (dungeonService.getPlayerData().currentHearts() <= 0) return;
 
-        VBox combatMenu = new VBox(10);
-        combatMenu.setLayoutX(20);
-        combatMenu.setLayoutY(20);
+            boolean enemyAttacked = dungeonService.executeNextEnemyTurn();
+            updateView();
 
-        if ("ENEMY_TURN".equals(roomData.combatPhase())) {
-            Button nextEnemyBtn = new Button("▶ Ricevi Attacchi dai Nemici");
-            nextEnemyBtn.setStyle("-fx-background-color: #ff4c4c; -fx-text-fill: white; -fx-font-weight: bold;");
-
-            nextEnemyBtn.setOnAction(e -> {
-                dungeonService.executeAllEnemyTurns();
-                // IL TURNO TORNA AL PLAYER: RESETTIAMO LE SUE AZIONI
+            if (enemyAttacked) {
+                startEnemyTurnSequence();
+            } else {
                 hasPlayerRolled = false;
                 hasPlayerAttacked = false;
                 updateView();
-            });
+            }
+        });
+        pause.play();
+    }
 
-            combatMenu.getChildren().add(nextEnemyBtn);
+    private Image getDiceImage(int value) {
+        String diceImageName = switch (value) {
+            case 1 -> "perspective-dice-six-faces-one.png";
+            case 2 -> "perspective-dice-six-faces-two.png";
+            case 3 -> "perspective-dice-six-faces-three.png";
+            case 4 -> "perspective-dice-six-faces-four.png";
+            case 5 -> "perspective-dice-six-faces-five.png";
+            case 6 -> "perspective-dice-six-faces-six.png";
+            default -> "perspective-dice-six-faces-one.png";
+        };
+        return new Image(getClass().getResourceAsStream("/assets/" + diceImageName));
+    }
+
+    // --- RENDER COMBAT UI AGGIORNATO (LAYOUT INFERIORE) ---
+    private void renderCombatUI(RoomDTO roomData) {
+        if (roomData.enemies() == null || roomData.enemies().isEmpty()) return;
+
+        // Usiamo un Pane per posizionare liberamente gli elementi con X e Y assolute
+        Pane combatMenu = new Pane();
+
+        if ("ENEMY_TURN".equals(roomData.combatPhase())) {
+            Label enemyTurnLabel = new Label("⌛ Turno dei Nemici in corso...");
+            enemyTurnLabel.setStyle("-fx-text-fill: #ff4c4c; -fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 5px;");
+
+            // Etichetta centrata in basso
+            enemyTurnLabel.setLayoutX(160);
+            enemyTurnLabel.setLayoutY(350);
+
+            combatMenu.getChildren().add(enemyTurnLabel);
 
         } else {
-            HBox diceBox = new HBox(10);
+            // 1. BLOCCO DEI DADI (Centrati, zona evidenziata)
+            HBox diceBox = new HBox(12); // Spazio tra i dadi aumentato
+            diceBox.setLayoutX(170); // Posizionati al centro-sinistra (da poco dopo i comandi)
+            diceBox.setLayoutY(450); // Allineati alla base del muro
 
-            ImageView diceSprite = new ImageView();
-            diceSprite.setFitWidth(40);
-            diceSprite.setFitHeight(40);
-            diceSprite.setPreserveRatio(true);
-            diceSprite.setSmooth(false);
+            for (int i = 0; i < 5; i++) {
+                ImageView diceSprite = new ImageView();
+                diceSprite.setFitWidth(40); // Più grandi e visibili
+                diceSprite.setFitHeight(40);
+                diceSprite.setPreserveRatio(true);
+                diceSprite.setSmooth(false);
+                diceSprite.setImage(getDiceImage(currentDiceRolls[i]));
+                diceBox.getChildren().add(diceSprite);
+            }
 
-            // LEGGE DALLA MEMORIA QUALE DADO MOSTRARE
-            String diceImageName = switch (currentDiceRoll) {
-                case 1 -> "perspective-dice-six-faces-one.png";
-                case 2 -> "perspective-dice-six-faces-two.png";
-                case 3 -> "perspective-dice-six-faces-three.png";
-                case 4 -> "perspective-dice-six-faces-four.png";
-                case 5 -> "perspective-dice-six-faces-five.png";
-                case 6 -> "perspective-dice-six-faces-six.png";
-                default -> "perspective-dice-six-faces-one.png";
-            };
-            diceSprite.setImage(new Image(getClass().getResourceAsStream("/assets/" + diceImageName)));
+            // 2. BLOCCO DEI BOTTONI (Colonna a destra, sfalsata verso l'alto)
+            VBox buttonsBox = new VBox(8); // Spazio verticale tra i bottoni
+            buttonsBox.setLayoutX(440); // Posizionati a destra (prima del muro destro)
+            buttonsBox.setLayoutY(415); // Sfalsati più in alto rispetto ai dadi (non allineati)
 
-            Button rollBtn = new Button("🎲 Tira il Dado");
-            String attackText = hasPlayerRolled ? "⚔ Attacca (" + currentDiceRoll + " Danni)" : "⚔ Attacca";
+            Button rollBtn = new Button("🎲 Tira i Dadi");
+            int totalDmg = 0;
+            for (int d : currentDiceRolls) totalDmg += d;
+            String attackText = hasPlayerRolled ? "⚔ Attacca (" + totalDmg + " Danni)" : "⚔ Attacca";
             Button attackBtn = new Button(attackText);
             Button endTurnBtn = new Button("⧖ Fine Turno");
 
             rollBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
             attackBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
+            endTurnBtn.setStyle("-fx-background-color: #ff9800; -fx-text-fill: white; -fx-font-weight: bold;");
 
-            // LA MAGIA DEI PULSANTI: LEGGE LA MEMORIA DI STATO
             rollBtn.setDisable(hasPlayerRolled);
             attackBtn.setDisable(!hasPlayerRolled || hasPlayerAttacked);
             endTurnBtn.setDisable(!hasPlayerAttacked);
 
             rollBtn.setOnAction(e -> {
-                currentDiceRoll = new Random().nextInt(6) + 1;
+                Random rand = new Random();
+                for (int i = 0; i < 5; i++) {
+                    currentDiceRolls[i] = rand.nextInt(6) + 1;
+                }
                 hasPlayerRolled = true;
                 updateView();
             });
 
             attackBtn.setOnAction(e -> {
-                dungeonService.executePlayerAttack(currentDiceRoll);
+                int dmg = 0;
+                for (int d : currentDiceRolls) dmg += d;
+                dungeonService.executePlayerAttack(dmg);
                 hasPlayerAttacked = true;
                 updateView();
             });
@@ -324,10 +370,12 @@ public class DungeonController {
             endTurnBtn.setOnAction(e -> {
                 dungeonService.endPlayerTurn();
                 updateView();
+                startEnemyTurnSequence();
             });
 
-            diceBox.getChildren().addAll(diceSprite, rollBtn);
-            combatMenu.getChildren().addAll(diceBox, attackBtn, endTurnBtn);
+            buttonsBox.getChildren().addAll(rollBtn, attackBtn, endTurnBtn);
+
+            combatMenu.getChildren().addAll(diceBox, buttonsBox);
         }
 
         roomPane.getChildren().add(combatMenu);

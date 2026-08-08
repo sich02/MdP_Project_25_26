@@ -145,28 +145,41 @@ public class DungeonService {
         }
     }
 
-    public void executeAllEnemyTurns() {
+    public boolean executeNextEnemyTurn() {
         Room currentRoom = currentLevel.getCurrentRoom();
 
         if (!(currentRoom instanceof CombatRoom cr) || cr.getCurrentPhase() != TurnPhase.ENEMY_TURN) {
-            return;
+            return false;
         }
 
-        // Filtriamo i nemici e li facciamo attaccare tutti in un solo colpo
         List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
                 cr.getEnemies().stream()
                         .filter(e -> !e.isDead())
                         .toList();
 
-        for (var enemy : aliveEnemies) {
-            var action = enemy.getNextAction();
-            player.takeDamage(action.damage());
-            System.out.println(enemy.getName() + " ti attacca e infligge danno!");
-            enemy.prepareNextAction();
+        // Se c'è un nemico in coda che deve ancora attaccare
+        if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
+            var actingEnemy = aliveEnemies.get(cr.getCurrentEnemyTurnIndex());
+
+            // Il nemico infligge danno ai tuoi cuori
+            player.takeDamage(actingEnemy.getNextAction().damage());
+            System.out.println(actingEnemy.getName() + " ti attacca!");
+
+            actingEnemy.prepareNextAction();
+            cr.advanceEnemyTurnIndex();
+
+            // Se questo era l'ULTIMO nemico, chiudiamo il turno nemici in anticipo
+            if (cr.getCurrentEnemyTurnIndex() >= aliveEnemies.size()) {
+                cr.setPhase(TurnPhase.INITIAL_ROLL);
+                cr.resetEnemyTurnIndex();
+            }
+            return true; // Ritorna true se un attacco è effettivamente avvenuto
         }
 
-        // Finito il massacro, la palla torna al Player!
+        // Sicurezza: se qualcosa va storto, passa il turno
         cr.setPhase(TurnPhase.INITIAL_ROLL);
+        cr.resetEnemyTurnIndex();
+        return false;
     }
 
     public void executePlayerAttack(int damage) {
