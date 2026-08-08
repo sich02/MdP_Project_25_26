@@ -22,25 +22,20 @@ public class DungeonLevel {
         return currentPosition;
     }
 
-    /**
-     * Verifica se c'è una stanza adiacente nella direzione indicata (quindi una porta).
-     */
+    public Room getRoomAt(Coordinate coordinate) {
+        return layout.get(coordinate);
+    }
+
     public boolean hasDoor(Coordinate pos, Direction dir) {
         return layout.containsKey(pos.moveTo(dir));
     }
 
-    /**
-     * Tenta di muovere il giocatore usando il tuo moveTo().
-     */
     public boolean movePlayer(Direction dir) {
         Coordinate nextPos = currentPosition.moveTo(dir);
-
-        // Se la mappa contiene una stanza in quella coordinata, lo spostamento è valido
         if (layout.containsKey(nextPos)) {
             currentPosition = nextPos;
             return true;
         }
-
         return false;
     }
 }

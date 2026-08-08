@@ -45,7 +45,8 @@ public class LayoutGenerator {
         }
 
         if (shopCoord != null) {
-            layout.put(shopCoord, new ShopRoom());
+            boolean requiresKey = floorNumber >= 2;
+            layout.put(shopCoord, new ShopRoom(requiresKey));
         }
 
         for (Coordinate coord : shape) {

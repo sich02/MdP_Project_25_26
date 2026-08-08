@@ -1,5 +1,7 @@
 package it.unicam.cs.mpgc.rpg122423.controller;
 
+import it.unicam.cs.mpgc.rpg122423.dto.DoorDTO;
+import it.unicam.cs.mpgc.rpg122423.dto.PlayerDTO;
 import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService;
@@ -19,10 +21,9 @@ public class DungeonController {
     @FXML private Label hpLabel;
     @FXML private Label goldLabel;
     @FXML private Pane roomPane;
+    @FXML private Label keysLabel;
 
     private ImageView playerSprite;
-
-    // Istanziamo il Service che fa da tramite con la logica procedurale
     private final DungeonService dungeonService = new DungeonService();
 
     @FXML
@@ -32,49 +33,48 @@ public class DungeonController {
         updateView();
     }
 
-    /**
-     * Sincronizza la grafica chiedendo i dati (DTO) al Service.
-     */
     private void updateView() {
-        // Riceviamo il DTO, non tocchiamo mai il Model direttamente!
         RoomDTO roomData = dungeonService.getCurrentRoomData();
 
-        // Usiamo i metodi generati in automatico dal record RoomDTO
-        renderRoom(roomData.hasNorth(), roomData.hasSouth(), roomData.hasEast(), roomData.hasWest());
-        spawnPlayer();
-    }
-
-    private void renderRoom(boolean hasNorth, boolean hasSouth, boolean hasEast, boolean hasWest) {
+        // 0. Pulisce la stanza
         roomPane.getChildren().clear();
 
-        double roomWidth = 600;
-        double roomHeight = 400;
-        double doorSize = 60;
-        double doorDepth = 15;
+        // 1. Disegna il pavimento come strato base
+        renderFloor();
 
-        if (hasNorth) {
-            Rectangle door = new Rectangle(doorSize, doorDepth, Color.SADDLEBROWN);
-            door.setX((roomWidth / 2) - (doorSize / 2));
-            door.setY(-doorDepth);
-            roomPane.getChildren().add(door);
-        }
-        if (hasSouth) {
-            Rectangle door = new Rectangle(doorSize, doorDepth, Color.SADDLEBROWN);
-            door.setX((roomWidth / 2) - (doorSize / 2));
-            door.setY(roomHeight);
-            roomPane.getChildren().add(door);
-        }
-        if (hasEast) {
-            Rectangle door = new Rectangle(doorDepth, doorSize, Color.SADDLEBROWN);
-            door.setX(roomWidth);
-            door.setY((roomHeight / 2) - (doorSize / 2));
-            roomPane.getChildren().add(door);
-        }
-        if (hasWest) {
-            Rectangle door = new Rectangle(doorDepth, doorSize, Color.SADDLEBROWN);
-            door.setX(-doorDepth);
-            door.setY((roomHeight / 2) - (doorSize / 2));
-            roomPane.getChildren().add(door);
+        // 2. Disegna le porte sopra al pavimento in base ai dati del Service
+        renderDoor(roomData.north(), Direction.NORTH);
+        renderDoor(roomData.south(), Direction.SOUTH);
+        renderDoor(roomData.east(), Direction.EAST);
+        renderDoor(roomData.west(), Direction.WEST);
+
+        // 3. Disegna il giocatore per ultimo (così sta sopra a tutto)
+        spawnPlayer();
+
+        // 4. Aggiornamento HUD
+        PlayerDTO playerStats = dungeonService.getPlayerData();
+        hpLabel.setText("Cuori: " + playerStats.currentHearts() + " / " + playerStats.maxHearts());
+        goldLabel.setText("Oro: " + playerStats.gold());
+        keysLabel.setText("Chiavi: " + playerStats.keys());
+    }
+
+    /**
+     * Disegna il pavimento che copre l'intera stanza (600x400).
+     */
+    private void renderFloor() {
+        try {
+            Image floorImg = new Image(getClass().getResourceAsStream("/assets/floor.png"));
+            ImageView floorSprite = new ImageView(floorImg);
+
+            floorSprite.setFitWidth(600);
+            floorSprite.setFitHeight(400);
+            floorSprite.setSmooth(false);
+
+            roomPane.getChildren().add(floorSprite);
+        } catch (Exception e) {
+            System.out.println("Sprite pavimento non trovato: /assets/floor.png");
+            Rectangle fallback = new Rectangle(600, 400, Color.web("#6d4a3d"));
+            roomPane.getChildren().add(fallback);
         }
     }
 
@@ -101,17 +101,74 @@ public class DungeonController {
         }
     }
 
+    private void renderDoor(DoorDTO doorInfo, Direction dir) {
+        if (!doorInfo.exists()) return;
+
+        double doorSize = 60;
+
+        String imagePath = "/assets/floorDoor.png";
+
+        switch (doorInfo.roomType()) {
+            case "BOSS" -> imagePath = "/assets/boosRoom Opened.png";
+            case "TREASURE" -> imagePath = doorInfo.isLocked() ?
+                    "/assets/treasure locked.png" : "/assets/treasure opened.png";
+            case "SHOP" -> imagePath = doorInfo.isLocked() ?
+                    "/assets/shop locked.png" : "/assets/shop opened.png";
+        }
+
+        try {
+            Image img = new Image(getClass().getResourceAsStream(imagePath));
+            ImageView doorSprite = new ImageView(img);
+            doorSprite.setFitWidth(doorSize);
+            doorSprite.setPreserveRatio(true);
+            doorSprite.setSmooth(false);
+
+            double roomWidth = 600;
+            double roomHeight = 400;
+            double offsetNorth = -5;
+            double offsetSouth = 20;
+            double offsetEast = 15;
+            double offsetWest = -15;
+
+            switch (dir) {
+                case NORTH -> {
+                    doorSprite.setX((roomWidth / 2) - (doorSize / 2));
+                    doorSprite.setY(offsetNorth);
+                }
+                case SOUTH -> {
+                    doorSprite.setX((roomWidth / 2) - (doorSize / 2));
+                    doorSprite.setY(roomHeight - doorSize + offsetSouth);
+                    doorSprite.setRotate(180);
+                }
+                case EAST -> {
+                    doorSprite.setX(roomWidth - doorSize + offsetEast);
+                    doorSprite.setY((roomHeight / 2) - (doorSize / 2));
+                    doorSprite.setRotate(90);
+                }
+                case WEST -> {
+                    doorSprite.setX(offsetWest);
+                    doorSprite.setY((roomHeight / 2) - (doorSize / 2));
+                    doorSprite.setRotate(270);
+                }
+            }
+
+            roomPane.getChildren().add(doorSprite);
+
+        } catch (Exception e) {
+            System.out.println("Errore caricamento sprite porta: " + imagePath);
+        }
+    }
+
     @FXML private void moveNorth(ActionEvent event) { tryMove(Direction.NORTH); }
     @FXML private void moveSouth(ActionEvent event) { tryMove(Direction.SOUTH); }
     @FXML private void moveEast(ActionEvent event) { tryMove(Direction.EAST); }
     @FXML private void moveWest(ActionEvent event) { tryMove(Direction.WEST); }
 
     private void tryMove(Direction dir) {
-        if (dungeonService.movePlayer(dir)) {
-            System.out.println("Spostamento verso " + dir + " riuscito!");
+        if (dungeonService.interactWithDirection(dir)) {
             updateView();
         } else {
-            System.out.println("Muro colpito!");
+            System.out.println("Muro colpito o ti serve una chiave per questa porta!");
         }
     }
 }
