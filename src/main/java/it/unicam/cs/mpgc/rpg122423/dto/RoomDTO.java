@@ -4,5 +4,6 @@ public record RoomDTO(
         DoorDTO north,
         DoorDTO south,
         DoorDTO east,
-        DoorDTO west
+        DoorDTO west,
+        EnemyDTO enemy
 ) {}

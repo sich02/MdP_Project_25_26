@@ -1,12 +1,9 @@
 package it.unicam.cs.mpgc.rpg122423.service.dungeon;
 
-import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
-import it.unicam.cs.mpgc.rpg122423.dto.DoorDTO;
-import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
+import it.unicam.cs.mpgc.rpg122423.dto.*;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.DungeonLevel;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Floor;
-import it.unicam.cs.mpgc.rpg122423.dto.PlayerDTO;
 import it.unicam.cs.mpgc.rpg122423.model.combat.Player;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
 
@@ -40,11 +37,32 @@ public class DungeonService {
         if (currentLevel == null) throw new IllegalStateException("Livello non inizializzato");
         Coordinate currentPos = currentLevel.getCurrentPosition();
 
+        // Recuperiamo la stanza in cui si trova il player in questo momento
+        Room currentRoom = currentLevel.getCurrentRoom();
+
+        EnemyDTO enemyDTO = null;
+
+        // Se la stanza è una CombatRoom, estraiamo i dati del nemico
+        if (currentRoom instanceof CombatRoom cr) {
+            // Usa l'import corretto per Enemy: it.unicam.cs.mpgc.rpg122423.model.combat.Enemy
+            var enemy = cr.getEnemy();
+            if (enemy != null && !enemy.isDead()) {
+                enemyDTO = new EnemyDTO(
+                        enemy.getName(),
+                        enemy.getCurrentHp(),
+                        enemy.getMaxHp(),
+                        enemy.getNextAction().description()
+                );
+            }
+        }
+
+        // Ora passiamo TUTTI E 5 i parametri, risolvendo l'errore!
         return new RoomDTO(
                 inspectDoor(currentPos, Direction.NORTH),
                 inspectDoor(currentPos, Direction.SOUTH),
                 inspectDoor(currentPos, Direction.EAST),
-                inspectDoor(currentPos, Direction.WEST)
+                inspectDoor(currentPos, Direction.WEST),
+                enemyDTO // <-- Il 5° parametro che mancava!
         );
     }
 
@@ -74,16 +92,29 @@ public class DungeonService {
     }
 
     public boolean interactWithDirection(Direction dir) {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof CombatRoom cr) {
+            if (cr.getEnemy() != null && !cr.getEnemy().isDead()) {
+                System.out.println("Le porte sono bloccate! Devi sconfiggere il nemico prima di poter proseguire!");
+                return false;
+            }
+        }
+
+
         Coordinate targetPos = currentLevel.getCurrentPosition().moveTo(dir);
         Room adjacentRoom = currentLevel.getRoomAt(targetPos);
 
+
         if (adjacentRoom == null) return false;
+
+
         if (adjacentRoom instanceof Lockable lockableRoom && lockableRoom.isLocked()) {
             if (player.getKeys() > 0) {
                 player.consumeKey();
                 lockableRoom.unlock();
                 return true;
             }
+            System.out.println("Ti serve una chiave per aprire questa porta!");
             return false;
         }
         return currentLevel.movePlayer(dir);
