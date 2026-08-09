@@ -7,9 +7,12 @@ import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
+import javafx.geometry.Pos; // Importante per centrare il testo sotto i dadi!
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import java.util.Random;
@@ -36,10 +39,14 @@ public class DungeonController {
 
     private Direction lastEntryDirection = null;
 
-    // --- MEMORIA DI STATO DEL COMBATTIMENTO ---
+    // --- MEMORIA DI STATO DEL COMBATTIMENTO E DEI DADI ---
     private boolean hasPlayerRolled = false;
     private boolean hasPlayerAttacked = false;
     private int[] currentDiceRolls = {1, 1, 1, 1, 1};
+
+    // Logica Reroll
+    private int rerollsLeft = 3; // Quante volte puoi cliccare un dado singolo per rerollarlo
+    private boolean isAnimating = false;
 
     @FXML
     public void initialize() {
@@ -79,7 +86,6 @@ public class DungeonController {
 
     private void showGameOverScreen() {
         roomPane.getChildren().clear();
-
         Rectangle bg = new Rectangle(600, 400, Color.BLACK);
 
         Label deathLabel = new Label("SEI MORTO");
@@ -93,11 +99,8 @@ public class DungeonController {
         restartBtn.setLayoutY(220);
 
         restartBtn.setOnAction(e -> {
-            hasPlayerRolled = false;
-            hasPlayerAttacked = false;
-            currentDiceRolls = new int[]{1, 1, 1, 1, 1};
+            resetPlayerTurnState();
             lastEntryDirection = null;
-
             dungeonService.startNewRun();
             updateView();
         });
@@ -105,18 +108,23 @@ public class DungeonController {
         roomPane.getChildren().addAll(bg, deathLabel, restartBtn);
     }
 
+    private void resetPlayerTurnState() {
+        hasPlayerRolled = false;
+        hasPlayerAttacked = false;
+        currentDiceRolls = new int[]{1, 1, 1, 1, 1};
+        rerollsLeft = 3;
+        isAnimating = false;
+    }
+
     private void renderFloor() {
         try {
             Image floorImg = new Image(getClass().getResourceAsStream("/assets/floor.png"));
             ImageView floorSprite = new ImageView(floorImg);
-
             floorSprite.setFitWidth(600);
             floorSprite.setFitHeight(400);
             floorSprite.setSmooth(false);
-
             roomPane.getChildren().add(floorSprite);
         } catch (Exception e) {
-            System.out.println("Sprite pavimento non trovato: /assets/floor.png");
             Rectangle fallback = new Rectangle(600, 400, Color.web("#6d4a3d"));
             roomPane.getChildren().add(fallback);
         }
@@ -124,18 +132,10 @@ public class DungeonController {
 
     private void spawnEnemies(java.util.List<EnemyDTO> enemies) {
         if (enemies == null || enemies.isEmpty()) return;
-
         double enemySize = 45;
         double centerX = (600 / 2.0) - (enemySize / 2.0);
         double centerY = (400 / 2.0) - (enemySize / 2.0);
-
-        double[][] positions = {
-                {centerX, centerY},
-                {centerX - 120, centerY - 80},
-                {centerX + 120, centerY - 80},
-                {centerX - 120, centerY + 80},
-                {centerX + 120, centerY + 80}
-        };
+        double[][] positions = { {centerX, centerY}, {centerX - 120, centerY - 80}, {centerX + 120, centerY - 80}, {centerX - 120, centerY + 80}, {centerX + 120, centerY + 80} };
 
         try {
             for (int i = 0; i < enemies.size(); i++) {
@@ -150,66 +150,55 @@ public class DungeonController {
                     default -> "Black_Bony_Afterbirth.png";
                 };
 
-                Image img = new Image(getClass().getResourceAsStream("/assets/" + spriteName));
-                ImageView enemySprite = new ImageView(img);
+                ImageView enemySprite = new ImageView(new Image(getClass().getResourceAsStream("/assets/" + spriteName)));
                 enemySprite.setFitWidth(enemySize);
                 enemySprite.setPreserveRatio(true);
                 enemySprite.setSmooth(false);
-
-                double enemyX = positions[i][0];
-                double enemyY = positions[i][1];
-                enemySprite.setX(enemyX);
-                enemySprite.setY(enemyY);
+                enemySprite.setX(positions[i][0]);
+                enemySprite.setY(positions[i][1]);
                 roomPane.getChildren().add(enemySprite);
 
                 Label hpText = new Label("HP: " + enemy.currentHp() + "/" + enemy.maxHp());
                 hpText.setStyle("-fx-text-fill: #ff4c4c; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
-                hpText.setLayoutX(enemyX - 5);
-                hpText.setLayoutY(enemyY - 15);
+                hpText.setLayoutX(positions[i][0] - 5);
+                hpText.setLayoutY(positions[i][1] - 15);
 
                 Label intentText = new Label(enemy.intentDescription());
                 intentText.setStyle("-fx-text-fill: #fcdb03; -fx-font-family: 'Courier New'; -fx-font-size: 10px;");
-                intentText.setLayoutX(enemyX - 25);
-                intentText.setLayoutY(enemyY - 30);
-
+                intentText.setLayoutX(positions[i][0] - 25);
+                intentText.setLayoutY(positions[i][1] - 30);
                 roomPane.getChildren().addAll(hpText, intentText);
             }
-        } catch (Exception e) {
-            System.out.println("Impossibile caricare lo sprite del nemico");
-        }
+        } catch (Exception e) {}
     }
 
     private void spawnPlayer() {
         double playerSize = 100;
         try {
-            Image img = new Image(getClass().getResourceAsStream("/assets/player.png"));
-            playerSprite = new ImageView(img);
+            ImageView playerSprite = new ImageView(new Image(getClass().getResourceAsStream("/assets/player.png")));
             playerSprite.setFitWidth(playerSize);
             playerSprite.setFitHeight(playerSize);
             playerSprite.setPreserveRatio(true);
             playerSprite.setSmooth(false);
 
-            double roomWidth = 600;
-            double roomHeight = 400;
-            double spawnX = (roomWidth / 2) - (playerSize / 2);
-            double spawnY = (roomHeight / 2) - (playerSize / 2);
+            double spawnX = (600 / 2.0) - (playerSize / 2.0);
+            double spawnY = (400 / 2.0) - (playerSize / 2.0);
             double padding = 50;
             if (lastEntryDirection != null) {
                 switch (lastEntryDirection) {
-                    case NORTH -> spawnY = roomHeight - playerSize - padding + 20;
+                    case NORTH -> spawnY = 400 - playerSize - padding + 20;
                     case SOUTH -> spawnY = padding - 20;
                     case EAST -> spawnX = padding - 20;
-                    case WEST -> spawnX = roomWidth - playerSize - padding + 20;
+                    case WEST -> spawnX = 600 - playerSize - padding + 20;
                 }
             }
             playerSprite.setX(spawnX);
             playerSprite.setY(spawnY);
             roomPane.getChildren().add(playerSprite);
         } catch (Exception e) {
-            System.out.println("Impossibile caricare lo sprite, uso placeholder.");
             Rectangle placeholder = new Rectangle(playerSize, playerSize, Color.DEEPSKYBLUE);
-            placeholder.setX((600 / 2) - (playerSize / 2));
-            placeholder.setY((400 / 2) - (playerSize / 2));
+            placeholder.setX((600 / 2.0) - (playerSize / 2.0));
+            placeholder.setY((400 / 2.0) - (playerSize / 2.0));
             roomPane.getChildren().add(placeholder);
         }
     }
@@ -218,34 +207,24 @@ public class DungeonController {
         if (!doorInfo.exists()) return;
         double doorSize = 60;
         String imagePath = "/assets/floorDoor.png";
-
         switch (doorInfo.roomType()) {
             case "BOSS" -> imagePath = "/assets/boosRoom Opened.png";
             case "TREASURE" -> imagePath = doorInfo.isLocked() ? "/assets/treasure locked.png" : "/assets/treasure opened.png";
             case "SHOP" -> imagePath = doorInfo.isLocked() ? "/assets/shop locked.png" : "/assets/shop opened.png";
         }
-
         try {
-            Image img = new Image(getClass().getResourceAsStream(imagePath));
-            ImageView doorSprite = new ImageView(img);
+            ImageView doorSprite = new ImageView(new Image(getClass().getResourceAsStream(imagePath)));
             doorSprite.setFitWidth(doorSize);
             doorSprite.setPreserveRatio(true);
             doorSprite.setSmooth(false);
-
-            double roomWidth = 600;
-            double roomHeight = 400;
-            double offsetNorth = -5, offsetSouth = 20, offsetEast = 15, offsetWest = -15;
-
             switch (dir) {
-                case NORTH -> { doorSprite.setX((roomWidth / 2) - (doorSize / 2)); doorSprite.setY(offsetNorth); }
-                case SOUTH -> { doorSprite.setX((roomWidth / 2) - (doorSize / 2)); doorSprite.setY(roomHeight - doorSize + offsetSouth); doorSprite.setRotate(180); }
-                case EAST -> { doorSprite.setX(roomWidth - doorSize + offsetEast); doorSprite.setY((roomHeight / 2) - (doorSize / 2)); doorSprite.setRotate(90); }
-                case WEST -> { doorSprite.setX(offsetWest); doorSprite.setY((roomHeight / 2) - (doorSize / 2)); doorSprite.setRotate(270); }
+                case NORTH -> { doorSprite.setX(270); doorSprite.setY(-5); }
+                case SOUTH -> { doorSprite.setX(270); doorSprite.setY(360); doorSprite.setRotate(180); }
+                case EAST -> { doorSprite.setX(555); doorSprite.setY(170); doorSprite.setRotate(90); }
+                case WEST -> { doorSprite.setX(-15); doorSprite.setY(170); doorSprite.setRotate(270); }
             }
             roomPane.getChildren().add(doorSprite);
-        } catch (Exception e) {
-            System.out.println("Errore caricamento sprite porta: " + imagePath);
-        }
+        } catch (Exception e) {}
     }
 
     @FXML private void moveNorth(ActionEvent event) { tryMove(Direction.NORTH); }
@@ -256,9 +235,7 @@ public class DungeonController {
     private void tryMove(Direction dir) {
         if (dungeonService.interactWithDirection(dir)) {
             lastEntryDirection = dir;
-            hasPlayerRolled = false;
-            hasPlayerAttacked = false;
-            currentDiceRolls = new int[]{1, 1, 1, 1, 1};
+            resetPlayerTurnState();
             updateView();
         } else {
             System.out.println("Muro colpito, nemico vivo o chiave mancante!");
@@ -276,8 +253,7 @@ public class DungeonController {
             if (enemyAttacked) {
                 startEnemyTurnSequence();
             } else {
-                hasPlayerRolled = false;
-                hasPlayerAttacked = false;
+                resetPlayerTurnState();
                 updateView();
             }
         });
@@ -285,7 +261,7 @@ public class DungeonController {
     }
 
     private Image getDiceImage(int value) {
-        String diceImageName = switch (value) {
+        String name = switch (value) {
             case 1 -> "perspective-dice-six-faces-one.png";
             case 2 -> "perspective-dice-six-faces-two.png";
             case 3 -> "perspective-dice-six-faces-three.png";
@@ -294,69 +270,185 @@ public class DungeonController {
             case 6 -> "perspective-dice-six-faces-six.png";
             default -> "perspective-dice-six-faces-one.png";
         };
-        return new Image(getClass().getResourceAsStream("/assets/" + diceImageName));
+        return new Image(getClass().getResourceAsStream("/assets/" + name));
     }
 
-    // --- RENDER COMBAT UI AGGIORNATO (LAYOUT INFERIORE) ---
+    // --- ANIMAZIONE: TIRO A CASCATA (TUTTI E 5 I DADI) ---
+    private void playCascadingRollAnimation(int index, ImageView[] diceViews, Label[] diceLabels, Label totalLabel, Runnable onComplete) {
+        if (index >= 5) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        Timeline timeline = new Timeline();
+        Random rand = new Random();
+        int frames = 6;
+
+        // Animazione delle facce che girano
+        for (int i = 0; i < frames; i++) {
+            KeyFrame kf = new KeyFrame(Duration.millis(50 * i), e -> {
+                int randomFace = rand.nextInt(6) + 1;
+                diceViews[index].setImage(getDiceImage(randomFace));
+                diceLabels[index].setText("?");
+            });
+            timeline.getKeyFrames().add(kf);
+        }
+
+        // Frame finale: si ferma sul valore vero e innesca il dado successivo
+        KeyFrame finalKf = new KeyFrame(Duration.millis(50 * frames), e -> {
+            currentDiceRolls[index] = rand.nextInt(6) + 1; // Salva il numero reale
+            diceViews[index].setImage(getDiceImage(currentDiceRolls[index]));
+            diceLabels[index].setText("+" + currentDiceRolls[index]); // Mostra il danno
+
+            // Aggiorna in tempo reale il totale a sinistra man mano che i dadi si fermano
+            int currentTotal = 0;
+            for (int j = 0; j <= index; j++) currentTotal += currentDiceRolls[j];
+            totalLabel.setText("TOTALE:\n" + currentTotal);
+
+            playCascadingRollAnimation(index + 1, diceViews, diceLabels, totalLabel, onComplete);
+        });
+
+        timeline.getKeyFrames().add(finalKf);
+        timeline.play();
+    }
+
+    // --- ANIMAZIONE: REROLL DEL SINGOLO DADO CLICCATO ---
+    private void playSingleDiceRollAnimation(int index, ImageView diceView, Label diceLabel, Label totalLabel, Runnable onComplete) {
+        Timeline timeline = new Timeline();
+        Random rand = new Random();
+        int frames = 8;
+
+        for (int i = 0; i < frames; i++) {
+            KeyFrame kf = new KeyFrame(Duration.millis(50 * i), e -> {
+                diceView.setImage(getDiceImage(rand.nextInt(6) + 1));
+                diceLabel.setText("?");
+            });
+            timeline.getKeyFrames().add(kf);
+        }
+
+        KeyFrame finalKf = new KeyFrame(Duration.millis(50 * frames), e -> {
+            currentDiceRolls[index] = rand.nextInt(6) + 1;
+            diceView.setImage(getDiceImage(currentDiceRolls[index]));
+            diceLabel.setText("+" + currentDiceRolls[index]);
+
+            // Ricalcola il totale
+            int newTotal = 0;
+            for (int d : currentDiceRolls) newTotal += d;
+            totalLabel.setText("TOTALE:\n" + newTotal);
+
+            if (onComplete != null) onComplete.run();
+        });
+
+        timeline.getKeyFrames().add(finalKf);
+        timeline.play();
+    }
+
     private void renderCombatUI(RoomDTO roomData) {
         if (roomData.enemies() == null || roomData.enemies().isEmpty()) return;
 
-        // Usiamo un Pane per posizionare liberamente gli elementi con X e Y assolute
         Pane combatMenu = new Pane();
 
         if ("ENEMY_TURN".equals(roomData.combatPhase())) {
             Label enemyTurnLabel = new Label("⌛ Turno dei Nemici in corso...");
             enemyTurnLabel.setStyle("-fx-text-fill: #ff4c4c; -fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 5px;");
-
-            // Etichetta centrata in basso
             enemyTurnLabel.setLayoutX(160);
             enemyTurnLabel.setLayoutY(350);
-
             combatMenu.getChildren().add(enemyTurnLabel);
 
         } else {
-            // 1. BLOCCO DEI DADI (Centrati, zona evidenziata)
-            HBox diceBox = new HBox(12); // Spazio tra i dadi aumentato
-            diceBox.setLayoutX(170); // Posizionati al centro-sinistra (da poco dopo i comandi)
-            diceBox.setLayoutY(450); // Allineati alla base del muro
+            // Contenitore principale orizzontale (Totale a SX, Dadi a DX)
+            HBox mainDiceArea = new HBox(15);
+            mainDiceArea.setAlignment(Pos.CENTER_LEFT);
+            mainDiceArea.setLayoutX(100);
+            mainDiceArea.setLayoutY(330);
+
+            // 1. BLOCCO DEL TOTALE (A SINISTRA)
+            int totalDmg = 0;
+            for (int d : currentDiceRolls) totalDmg += d;
+
+            Label totalLabel = new Label("TOTALE:\n" + (hasPlayerRolled ? totalDmg : "0"));
+            totalLabel.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-alignment: center; -fx-background-color: rgba(0,0,0,0.5); -fx-padding: 5px; -fx-border-color: #4CAF50; -fx-border-width: 2px;");
+            totalLabel.setAlignment(Pos.CENTER);
+
+            // 2. BLOCCO DEI DADI
+            HBox diceBox = new HBox(8);
+            ImageView[] diceViews = new ImageView[5];
+            Label[] diceLabels = new Label[5];
 
             for (int i = 0; i < 5; i++) {
+                VBox singleDiceBox = new VBox(2);
+                singleDiceBox.setAlignment(Pos.CENTER);
+
                 ImageView diceSprite = new ImageView();
-                diceSprite.setFitWidth(40); // Più grandi e visibili
+                diceSprite.setFitWidth(40);
                 diceSprite.setFitHeight(40);
                 diceSprite.setPreserveRatio(true);
                 diceSprite.setSmooth(false);
                 diceSprite.setImage(getDiceImage(currentDiceRolls[i]));
-                diceBox.getChildren().add(diceSprite);
+                diceViews[i] = diceSprite;
+
+                // Etichetta del danno (es. "+3")
+                Label diceDmgLabel = new Label(hasPlayerRolled ? "+" + currentDiceRolls[i] : "");
+                diceDmgLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
+                diceLabels[i] = diceDmgLabel;
+
+                // LOGICA DEL CLICK: REROLL DEL SINGOLO DADO
+                final int finalI = i;
+                diceSprite.setOnMouseClicked(e -> {
+                    if (hasPlayerRolled && !hasPlayerAttacked && rerollsLeft > 0 && !isAnimating) {
+                        isAnimating = true;
+                        rerollsLeft--;
+
+                        // Aggiorniamo la grafica senza pulire lo schermo per evitare sfarfallii
+                        playSingleDiceRollAnimation(finalI, diceViews[finalI], diceLabels[finalI], totalLabel, () -> {
+                            isAnimating = false;
+                            updateView(); // Refresh completo solo alla fine dell'animazione
+                        });
+
+                        updateView(); // Ricarica subito per mostrare i bottoni disabilitati durante l'animazione e aggiornare "Reroll rimasti"
+                    }
+                });
+
+                singleDiceBox.getChildren().addAll(diceSprite, diceDmgLabel);
+                diceBox.getChildren().add(singleDiceBox);
             }
 
-            // 2. BLOCCO DEI BOTTONI (Colonna a destra, sfalsata verso l'alto)
-            VBox buttonsBox = new VBox(8); // Spazio verticale tra i bottoni
-            buttonsBox.setLayoutX(440); // Posizionati a destra (prima del muro destro)
-            buttonsBox.setLayoutY(415); // Sfalsati più in alto rispetto ai dadi (non allineati)
+            mainDiceArea.getChildren().addAll(totalLabel, diceBox);
+
+            // 3. BLOCCO DEI BOTTONI (A DESTRA)
+            VBox buttonsBox = new VBox(8);
+            buttonsBox.setAlignment(Pos.CENTER);
+            buttonsBox.setLayoutX(440);
+            buttonsBox.setLayoutY(285);
+
+            Label rerollInfo = new Label("Reroll: " + rerollsLeft);
+            rerollInfo.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
 
             Button rollBtn = new Button("🎲 Tira i Dadi");
-            int totalDmg = 0;
-            for (int d : currentDiceRolls) totalDmg += d;
-            String attackText = hasPlayerRolled ? "⚔ Attacca (" + totalDmg + " Danni)" : "⚔ Attacca";
-            Button attackBtn = new Button(attackText);
+            Button attackBtn = new Button("⚔ Attacca");
             Button endTurnBtn = new Button("⧖ Fine Turno");
 
             rollBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
             attackBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
             endTurnBtn.setStyle("-fx-background-color: #ff9800; -fx-text-fill: white; -fx-font-weight: bold;");
 
-            rollBtn.setDisable(hasPlayerRolled);
-            attackBtn.setDisable(!hasPlayerRolled || hasPlayerAttacked);
-            endTurnBtn.setDisable(!hasPlayerAttacked);
+            // Stato bottoni
+            rollBtn.setDisable(hasPlayerRolled || isAnimating);
+            attackBtn.setDisable(!hasPlayerRolled || hasPlayerAttacked || isAnimating);
+            endTurnBtn.setDisable(!hasPlayerAttacked || isAnimating);
 
             rollBtn.setOnAction(e -> {
-                Random rand = new Random();
-                for (int i = 0; i < 5; i++) {
-                    currentDiceRolls[i] = rand.nextInt(6) + 1;
-                }
-                hasPlayerRolled = true;
-                updateView();
+                isAnimating = true;
+                rollBtn.setDisable(true);
+                attackBtn.setDisable(true);
+                endTurnBtn.setDisable(true);
+
+                // Avvia l'animazione a cascata sul primo dado (indice 0)
+                playCascadingRollAnimation(0, diceViews, diceLabels, totalLabel, () -> {
+                    isAnimating = false;
+                    hasPlayerRolled = true;
+                    updateView();
+                });
             });
 
             attackBtn.setOnAction(e -> {
@@ -373,9 +465,8 @@ public class DungeonController {
                 startEnemyTurnSequence();
             });
 
-            buttonsBox.getChildren().addAll(rollBtn, attackBtn, endTurnBtn);
-
-            combatMenu.getChildren().addAll(diceBox, buttonsBox);
+            buttonsBox.getChildren().addAll(rerollInfo, rollBtn, attackBtn, endTurnBtn);
+            combatMenu.getChildren().addAll(mainDiceArea, buttonsBox);
         }
 
         roomPane.getChildren().add(combatMenu);
