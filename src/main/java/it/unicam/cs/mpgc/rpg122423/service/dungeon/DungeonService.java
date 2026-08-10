@@ -26,7 +26,6 @@ public class DungeonService {
         System.out.println("Generazione procedurale del Piano " + currentFloorNumber + " in corso...");
         this.player = new Player();
         Floor floor = generator.generateFloor(currentFloorNumber);
-        Coordinate spawn = new Coordinate(0, 0);
         this.currentLevel = new DungeonLevel(floor.getRooms(), floor.getStartingCoordinate());
         System.out.println("Piano generato e pronto all'esplorazione!");
     }
@@ -43,7 +42,6 @@ public class DungeonService {
 
         List<EnemyDTO> enemyDTOs = new ArrayList<>();
 
-        // Se la stanza è una CombatRoom, riempiamo la lista
         if (currentRoom instanceof CombatRoom cr) {
             for (var enemy : cr.getEnemies()) {
                 if (!enemy.isDead()) {
@@ -134,18 +132,44 @@ public class DungeonService {
         );
     }
 
-    // --- NUOVI METODI: GESTIONE TURNI COMBATTIMENTO ---
-
     public void endPlayerTurn() {
         Room currentRoom = currentLevel.getCurrentRoom();
         if (currentRoom instanceof CombatRoom cr && !cr.isCleared()) {
             cr.setPhase(TurnPhase.ENEMY_TURN);
-            cr.resetEnemyTurnIndex(); // Si riparte dal primo nemico
+            cr.resetEnemyTurnIndex();
             System.out.println("Turno del giocatore terminato. Inizia il turno dei nemici.");
         }
     }
 
-    public boolean executeNextEnemyTurn() {
+    public void executePlayerAttack(int damage, int targetIndex) {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() != TurnPhase.ENEMY_TURN && !cr.isCleared()) {
+
+            List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
+                    cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
+
+            if (targetIndex >= 0 && targetIndex < aliveEnemies.size()) {
+                var target = aliveEnemies.get(targetIndex);
+                target.takeDamage(damage);
+                System.out.println("Hai inflitto " + damage + " danni a " + target.getName() + "!");
+            }
+        }
+    }
+
+    // --- NUOVO: Ritorna il nome del nemico che sta per attaccare per il QTE ---
+    public String getNextAttackerName() {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
+            List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies = cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
+            if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
+                return aliveEnemies.get(cr.getCurrentEnemyTurnIndex()).getName();
+            }
+        }
+        return null;
+    }
+
+    // --- AGGIORNATO: Accetta in input l'esito dello Skill Check manuale ---
+    public boolean executeNextEnemyTurn(boolean dodged) {
         Room currentRoom = currentLevel.getCurrentRoom();
 
         if (!(currentRoom instanceof CombatRoom cr) || cr.getCurrentPhase() != TurnPhase.ENEMY_TURN) {
@@ -157,42 +181,29 @@ public class DungeonService {
                         .filter(e -> !e.isDead())
                         .toList();
 
-        // Se c'è un nemico in coda che deve ancora attaccare
         if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
             var actingEnemy = aliveEnemies.get(cr.getCurrentEnemyTurnIndex());
+            var action = actingEnemy.getNextAction();
 
-            // Il nemico infligge danno ai tuoi cuori
-            player.takeDamage(actingEnemy.getNextAction().damage());
-            System.out.println(actingEnemy.getName() + " ti attacca!");
+            if (!dodged) {
+                player.takeDamage(action.damage());
+                System.out.println(actingEnemy.getName() + " ti colpisce e infligge " + action.damage() + " danni!");
+            } else {
+                System.out.println("SCHIVATA PERFETTA! " + actingEnemy.getName() + " ti ha mancato.");
+            }
 
             actingEnemy.prepareNextAction();
             cr.advanceEnemyTurnIndex();
 
-            // Se questo era l'ULTIMO nemico, chiudiamo il turno nemici in anticipo
             if (cr.getCurrentEnemyTurnIndex() >= aliveEnemies.size()) {
                 cr.setPhase(TurnPhase.INITIAL_ROLL);
                 cr.resetEnemyTurnIndex();
             }
-            return true; // Ritorna true se un attacco è effettivamente avvenuto
+            return true;
         }
 
-        // Sicurezza: se qualcosa va storto, passa il turno
         cr.setPhase(TurnPhase.INITIAL_ROLL);
         cr.resetEnemyTurnIndex();
         return false;
-    }
-
-    public void executePlayerAttack(int damage) {
-        Room currentRoom = currentLevel.getCurrentRoom();
-        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() != TurnPhase.ENEMY_TURN && !cr.isCleared()) {
-
-            // Trova il primo bersaglio vivo
-            var target = cr.getEnemies().stream().filter(e -> !e.isDead()).findFirst().orElse(null);
-
-            if (target != null) {
-                target.takeDamage(damage);
-                System.out.println("Hai inflitto " + damage + " danni a " + target.getName() + "!");
-            }
-        }
     }
 }
