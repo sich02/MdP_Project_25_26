@@ -9,6 +9,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.paint.Color;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -21,53 +23,69 @@ import javafx.util.Duration;
 import java.util.Random;
 
 /**
- * Gestisce esclusivamente il rendering e la logica visiva del menù di combattimento (Dadi, Reroll, Combo).
+ * Gestisce esclusivamente il rendering e la logica visiva del menù di
+ * combattimento (Dadi, Reroll, Combo).
  */
 public class CombatUIManager {
 
     // Memoria di stato isolata dal resto del gioco
     private boolean hasPlayerRolled = false;
     private boolean hasPlayerAttacked = false;
-    private int[] currentDiceRolls = {1, 1, 1, 1, 1};
+    private int[] currentDiceRolls = { 1, 1, 1, 1, 1 };
     private int rerollsLeft = 3;
     private boolean isAnimating = false;
 
     public void resetState() {
         hasPlayerRolled = false;
         hasPlayerAttacked = false;
-        currentDiceRolls = new int[]{1, 1, 1, 1, 1};
+        currentDiceRolls = new int[] { 1, 1, 1, 1, 1 };
         rerollsLeft = 3;
         isAnimating = false;
     }
 
-    public void render(Pane roomPane, RoomDTO roomData, DungeonService dungeonService, int selectedEnemyIndex, Runnable updateViewCallback, Runnable startEnemyTurnCallback) {
-        if (roomData.enemies() == null || roomData.enemies().isEmpty()) return;
+    public void render(Pane roomPane, RoomDTO roomData, DungeonService dungeonService, int selectedEnemyIndex,
+            Runnable updateViewCallback, Runnable startEnemyTurnCallback) {
+        if (roomData.enemies() == null || roomData.enemies().isEmpty())
+            return;
 
         Pane combatMenu = new Pane();
         combatMenu.setPickOnBounds(false);
 
         if ("ENEMY_TURN".equals(roomData.combatPhase())) {
             Label enemyTurnLabel = new Label("⌛ Turno dei Nemici in corso...");
-            enemyTurnLabel.setStyle("-fx-text-fill: #ff4c4c; -fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 5px;");
+            enemyTurnLabel.setStyle(
+                    "-fx-text-fill: #ff4c4c; -fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 5px;");
             enemyTurnLabel.setLayoutX(160);
-            enemyTurnLabel.setLayoutY(350);
+            enemyTurnLabel.setLayoutY(420);
             combatMenu.getChildren().add(enemyTurnLabel);
         } else {
-            buildPlayerTurnUI(combatMenu, dungeonService, selectedEnemyIndex, updateViewCallback, startEnemyTurnCallback);
+            buildPlayerTurnUI(combatMenu, dungeonService, selectedEnemyIndex, updateViewCallback,
+                    startEnemyTurnCallback);
         }
 
         roomPane.getChildren().add(combatMenu);
     }
 
-    private void buildPlayerTurnUI(Pane combatMenu, DungeonService dungeonService, int selectedEnemyIndex, Runnable updateViewCallback, Runnable startEnemyTurnCallback) {
-        HBox mainDiceArea = new HBox(15);
+    private void buildPlayerTurnUI(Pane combatMenu, DungeonService dungeonService, int selectedEnemyIndex,
+            Runnable updateViewCallback, Runnable startEnemyTurnCallback) {
+        HBox mainDiceArea = new HBox(10);
         mainDiceArea.setAlignment(Pos.CENTER_LEFT);
         mainDiceArea.setLayoutX(90);
-        mainDiceArea.setLayoutY(315);
+        mainDiceArea.setLayoutY(410);
 
         Label totalLabel = new Label("TOTALE:\n0");
-        totalLabel.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-alignment: center; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 8px; -fx-border-color: #4CAF50; -fx-border-width: 2px;");
+        totalLabel.setStyle(
+                "-fx-text-fill: #4CAF50; -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-alignment: center; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 4px; -fx-border-color: #4CAF50; -fx-border-width: 1px;");
         totalLabel.setAlignment(Pos.CENTER);
+
+        Label rerollInfo = new Label("Reroll: " + rerollsLeft);
+        rerollInfo.setStyle(
+                "-fx-text-fill: white; -fx-font-size: 11px; -fx-background-color: rgba(0,0,0,0.5); -fx-padding: 2px; -fx-text-alignment: center;");
+        rerollInfo.setAlignment(Pos.CENTER);
+
+        VBox totalAndRerollBox = new VBox(3);
+        totalAndRerollBox.setAlignment(Pos.CENTER);
+        totalAndRerollBox.getChildren().addAll(totalLabel, rerollInfo);
 
         VBox overlayAndDiceBox = new VBox(5);
         overlayAndDiceBox.setAlignment(Pos.CENTER);
@@ -94,7 +112,8 @@ public class CombatUIManager {
             diceViews[i] = diceSprite;
 
             Label diceDmgLabel = new Label(hasPlayerRolled ? "+" + currentDiceRolls[i] : "");
-            diceDmgLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-background-color: rgba(0,0,0,0.4); -fx-padding: 2px;");
+            diceDmgLabel.setStyle(
+                    "-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-background-color: rgba(0,0,0,0.4); -fx-padding: 2px;");
             diceLabels[i] = diceDmgLabel;
 
             final int finalI = i;
@@ -107,10 +126,11 @@ public class CombatUIManager {
                     comboNameLabel.setText("Reroll...");
                     comboNameLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 14px;");
 
-                    playSingleDiceRollAnimation(finalI, diceViews[finalI], diceLabels[finalI], totalLabel, comboNameLabel, attackBtn, () -> {
-                        isAnimating = false;
-                        updateViewCallback.run();
-                    });
+                    playSingleDiceRollAnimation(finalI, diceViews, diceLabels[finalI], totalLabel,
+                            comboNameLabel, attackBtn, () -> {
+                                isAnimating = false;
+                                updateViewCallback.run();
+                            });
 
                     updateViewCallback.run();
                 }
@@ -121,19 +141,16 @@ public class CombatUIManager {
         }
 
         overlayAndDiceBox.getChildren().addAll(comboNameLabel, diceBox);
-        mainDiceArea.getChildren().addAll(totalLabel, overlayAndDiceBox);
+        mainDiceArea.getChildren().addAll(totalAndRerollBox, overlayAndDiceBox);
 
         if (hasPlayerRolled && !isAnimating) {
-            updateComboUI(totalLabel, comboNameLabel, attackBtn);
+            updateComboUI(totalLabel, comboNameLabel, attackBtn, diceViews);
         }
 
-        VBox buttonsBox = new VBox(8);
+        VBox buttonsBox = new VBox(5);
         buttonsBox.setAlignment(Pos.CENTER);
         buttonsBox.setLayoutX(440);
-        buttonsBox.setLayoutY(285);
-
-        Label rerollInfo = new Label("Reroll: " + rerollsLeft);
-        rerollInfo.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-background-color: rgba(0,0,0,0.5); -fx-padding: 3px;");
+        buttonsBox.setLayoutY(412);
 
         String rollText = !hasPlayerRolled ? "🎲 Tira i Dadi" : "🔄 Reroll Disabilitato";
         Button rollBtn = new Button(rollText);
@@ -173,15 +190,16 @@ public class CombatUIManager {
             startEnemyTurnCallback.run();
         });
 
-        buttonsBox.getChildren().addAll(rerollInfo, rollBtn, attackBtn, endTurnBtn);
+        buttonsBox.getChildren().addAll(rollBtn, attackBtn, endTurnBtn);
         combatMenu.getChildren().addAll(mainDiceArea, buttonsBox);
     }
 
-    private void updateComboUI(Label totalLabel, Label comboLabel, Button attackBtn) {
+    private void updateComboUI(Label totalLabel, Label comboLabel, Button attackBtn, ImageView[] diceViews) {
         if (!hasPlayerRolled) {
             totalLabel.setText("TOTALE:\n0");
             comboLabel.setText("");
             attackBtn.setText("⚔ Attacca");
+            clearDiceHighlights(diceViews);
             return;
         }
 
@@ -190,19 +208,50 @@ public class CombatUIManager {
         totalLabel.setText("TOTALE:\n" + result.totalDamage());
         comboLabel.setText(result.name());
 
-        if (result.name().equals("NESSUNA COMBO") || result.name().equals("COPPIA")) {
+        if (result.name().equals("Dado Pi\u00f9 Alto") || result.name().equals("COPPIA")) {
             comboLabel.setStyle("-fx-text-fill: #e0e0e0; -fx-font-size: 14px; -fx-font-weight: bold;");
         } else {
-            comboLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-size: 16px; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, #ffaa00, 5, 0.5, 0, 0);");
+            comboLabel.setStyle(
+                    "-fx-text-fill: #ffd700; -fx-font-size: 16px; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, #ffaa00, 5, 0.5, 0, 0);");
         }
+
+        highlightComboDice(diceViews, result);
 
         attackBtn.setText("⚔ Attacca (" + result.totalDamage() + " Danni)");
     }
 
-    private void playCascadingRollAnimation(int index, ImageView[] diceViews, Label[] diceLabels, Label totalLabel, Label comboLabel, Button attackBtn, Runnable onComplete) {
+    /** Applica un effetto glow dorato ai dadi che fanno parte della combo. */
+    private void highlightComboDice(ImageView[] diceViews, ComboResult result) {
+        // Prima rimuovi tutti gli effetti
+        clearDiceHighlights(diceViews);
+
+        if (result.comboIndices().isEmpty()) return;
+
+        DropShadow comboGlow = new DropShadow();
+        comboGlow.setColor(Color.GOLD);
+        comboGlow.setSpread(0.6);
+        comboGlow.setRadius(12);
+
+        for (int idx : result.comboIndices()) {
+            if (idx >= 0 && idx < diceViews.length) {
+                diceViews[idx].setEffect(comboGlow);
+            }
+        }
+    }
+
+    /** Rimuove gli effetti glow da tutti i dadi. */
+    private void clearDiceHighlights(ImageView[] diceViews) {
+        for (ImageView dv : diceViews) {
+            dv.setEffect(null);
+        }
+    }
+
+    private void playCascadingRollAnimation(int index, ImageView[] diceViews, Label[] diceLabels, Label totalLabel,
+            Label comboLabel, Button attackBtn, Runnable onComplete) {
         if (index >= 5) {
-            updateComboUI(totalLabel, comboLabel, attackBtn);
-            if (onComplete != null) onComplete.run();
+            updateComboUI(totalLabel, comboLabel, attackBtn, diceViews);
+            if (onComplete != null)
+                onComplete.run();
             return;
         }
 
@@ -224,7 +273,8 @@ public class CombatUIManager {
             diceLabels[index].setText("+" + currentDiceRolls[index]);
 
             int currentTotal = 0;
-            for (int j = 0; j <= index; j++) currentTotal += currentDiceRolls[j];
+            for (int j = 0; j <= index; j++)
+                currentTotal += currentDiceRolls[j];
             totalLabel.setText("TOTALE:\n" + currentTotal);
             comboLabel.setText("Calcolando...");
             comboLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 14px; -fx-font-style: italic;");
@@ -236,7 +286,9 @@ public class CombatUIManager {
         timeline.play();
     }
 
-    private void playSingleDiceRollAnimation(int index, ImageView diceView, Label diceLabel, Label totalLabel, Label comboLabel, Button attackBtn, Runnable onComplete) {
+    private void playSingleDiceRollAnimation(int index, ImageView[] allDiceViews, Label diceLabel, Label totalLabel,
+            Label comboLabel, Button attackBtn, Runnable onComplete) {
+        ImageView diceView = allDiceViews[index];
         Timeline timeline = new Timeline();
         Random rand = new Random();
         int frames = 8;
@@ -254,9 +306,10 @@ public class CombatUIManager {
             diceView.setImage(getDiceImage(currentDiceRolls[index]));
             diceLabel.setText("+" + currentDiceRolls[index]);
 
-            updateComboUI(totalLabel, comboLabel, attackBtn);
+            updateComboUI(totalLabel, comboLabel, attackBtn, allDiceViews);
 
-            if (onComplete != null) onComplete.run();
+            if (onComplete != null)
+                onComplete.run();
         });
 
         timeline.getKeyFrames().add(finalKf);

@@ -51,6 +51,8 @@ public class DodgeQTEManager {
 
         barPane.getChildren().addAll(title, barBg, successZone, cursor);
         qteContainer.getChildren().addAll(dim, barPane);
+
+        // Aggiungiamo prima il contenitore alla scena
         roomPane.getChildren().add(qteContainer);
 
         Timeline qteTimeline = new Timeline();
@@ -80,14 +82,17 @@ public class DodgeQTEManager {
                 showQTEResult(roomPane, barPane, success, qteContainer, onResult);
             }
         };
-
         dim.setOnMousePressed(e -> handleAction.run());
 
-        if (roomPane.getScene() != null) {
-            roomPane.getScene().setOnKeyPressed(e -> {
-                if (e.getCode() == KeyCode.SPACE) handleAction.run();
-            });
-        }
+        qteContainer.setFocusTraversable(true);
+        qteContainer.requestFocus();
+
+        qteContainer.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.SPACE) {
+                e.consume();
+                handleAction.run();
+            }
+        });
 
         qteTimeline.play();
     }
@@ -103,9 +108,6 @@ public class DodgeQTEManager {
         PauseTransition pause = new PauseTransition(Duration.seconds(0.8));
         pause.setOnFinished(e -> {
             roomPane.getChildren().remove(qteContainer);
-            if (roomPane.getScene() != null) {
-                roomPane.getScene().setOnKeyPressed(null);
-            }
             onResult.accept(dodged);
         });
         pause.play();
