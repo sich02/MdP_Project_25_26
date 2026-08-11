@@ -1,27 +1,15 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
-import it.unicam.cs.mpgc.rpg122423.model.combat.BossEnemy;
 import it.unicam.cs.mpgc.rpg122423.model.combat.Enemy;
 import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
 
 import java.util.List;
-import java.util.Random;
 
 /**
- * Stanza del Boss. Contiene un singolo boss con stats scalate al piano.
+ * Stanza del Boss. Contiene un singolo boss fornito dall'esterno.
  * Dopo la sconfitta del boss, appare una botola per avanzare al piano successivo.
  */
 public class BossRoom implements Room, Combattable {
-
-    private static final Random RANDOM = new Random();
-
-    /** Pool globale dei boss: {nome, baseHp, baseDmg} */
-    private static final String[][] BOSS_POOL = {
-            {"Conquest", "40", "5"},
-            {"Dark One", "50", "6"},
-            {"Famine", "35", "7"},
-            {"Little Horn", "45", "5"}
-    };
 
     private boolean cleared = false;
     private boolean trapdoorActive = false;
@@ -29,22 +17,15 @@ public class BossRoom implements Room, Combattable {
     private TurnPhase currentPhase;
     private int currentEnemyTurnIndex;
 
-    public BossRoom(int floorNumber) {
-        this.boss = pickRandomBoss(floorNumber);
+    /**
+     * Crea una stanza del Boss con il boss fornito dall'esterno.
+     *
+     * @param boss il nemico boss già creato dal service
+     */
+    public BossRoom(Enemy boss) {
+        this.boss = boss;
         this.currentPhase = TurnPhase.INITIAL_ROLL;
         this.currentEnemyTurnIndex = 0;
-    }
-
-    /**
-     * Sceglie un boss casuale dalla pool globale con stats scalate al piano.
-     * Logica inlined (nessun Factory pattern).
-     */
-    private static BossEnemy pickRandomBoss(int floorNumber) {
-        int index = RANDOM.nextInt(BOSS_POOL.length);
-        String name = BOSS_POOL[index][0];
-        int baseHp = Integer.parseInt(BOSS_POOL[index][1]);
-        int baseDmg = Integer.parseInt(BOSS_POOL[index][2]);
-        return new BossEnemy(name, baseHp, baseDmg, floorNumber);
     }
 
     public Enemy getBoss() { return boss; }
@@ -73,4 +54,8 @@ public class BossRoom implements Room, Combattable {
         this.cleared = true;
         this.trapdoorActive = true;
     }
+
+    @Override
+    public String getRoomType() { return "BOSS"; }
 }
+

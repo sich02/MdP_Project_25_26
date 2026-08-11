@@ -32,6 +32,23 @@ public class MainMenuController {
     private void loadScene(ActionEvent event, String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            
+            if (fxmlPath.equals("/dungeon.fxml")) {
+                loader.setControllerFactory(clazz -> {
+                    if (clazz == DungeonController.class) {
+                        return new DungeonController(
+                            new it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService(), 
+                            new CombatUIManager()
+                        );
+                    }
+                    try {
+                        return clazz.getDeclaredConstructor().newInstance();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+            
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root, 1024, 768));

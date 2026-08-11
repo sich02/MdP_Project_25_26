@@ -31,4 +31,8 @@ public class TreasureRoom implements Room,  Lootable, Lockable {
         this.lootAvailable = false;
         this.markAsCleared();
     }
+
+    @Override
+    public String getRoomType() { return "TREASURE"; }
 }
+

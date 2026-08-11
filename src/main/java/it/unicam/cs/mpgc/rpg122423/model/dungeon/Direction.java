@@ -1,7 +1,5 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
-import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
-
 public enum Direction {
     NORTH(0, 1),
     SOUTH(0, -1),

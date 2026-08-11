@@ -16,4 +16,7 @@ public class ShopRoom implements Room, Lockable {
 
     @Override
     public void unlock() { this.isLocked = false; }
+
+    @Override
+    public String getRoomType() { return "SHOP"; }
 }

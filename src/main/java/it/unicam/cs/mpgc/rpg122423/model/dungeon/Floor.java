@@ -1,13 +1,11 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon;
-
-import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 
 import java.util.Map;
 import java.util.Optional;
 
-public class    Floor {
+public class Floor {
     private final int floorNumber;
     private final Map<Coordinate, Room> rooms;
     private boolean cleared;
@@ -23,7 +21,6 @@ public class    Floor {
         this.rooms.put(new Coordinate(0, 0), new SpawnRoom());
     }
 
-
     public Optional<Room> getRoomAt(Coordinate coordinate) {
         return Optional.ofNullable(rooms.get(coordinate));
     }
@@ -32,7 +29,7 @@ public class    Floor {
     public int getFloorNumber() {return floorNumber;}
     public boolean isCleared() {return cleared;}
     public void markAsCleared() {this.cleared = true;}
-    public Map<Coordinate, Room> getRooms() {return rooms;}
+    public Map<Coordinate, Room> getRooms() {return java.util.Collections.unmodifiableMap(rooms);}
 
 
 }

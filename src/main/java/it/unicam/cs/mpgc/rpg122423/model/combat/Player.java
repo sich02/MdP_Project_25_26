@@ -14,8 +14,12 @@ public class Player implements StatusEffectHolder {
     private int keys;
     private final DicePool dicePool;
     private final List<StatusEffect> activeEffects;
+    
+    // Stato del turno di combattimento (spostato dalla View)
+    private boolean hasRolled;
+    private boolean hasAttacked;
+    private int rerollsLeft;
 
-    // Rimuoviamo il parametro dal costruttore e fissiamo a 6 (3 cuori)
     public Player() {
         this.maxHp = 6;
         this.currentHp = maxHp;
@@ -23,12 +27,29 @@ public class Player implements StatusEffectHolder {
         this.keys = 0;
         this.dicePool = new DicePool();
         this.activeEffects = new ArrayList<>();
+        resetTurnState();
     }
+
+    public void resetTurnState() {
+        this.hasRolled = false;
+        this.hasAttacked = false;
+        this.rerollsLeft = 3;
+    }
+
+    public boolean hasRolled() { return hasRolled; }
+    public void setHasRolled(boolean hasRolled) { this.hasRolled = hasRolled; }
+    
+    public boolean hasAttacked() { return hasAttacked; }
+    public void setHasAttacked(boolean hasAttacked) { this.hasAttacked = hasAttacked; }
+    
+    public int getRerollsLeft() { return rerollsLeft; }
+    public void decrementRerolls() { if (rerollsLeft > 0) rerollsLeft--; }
+
 
     /**
      * Ignora l'entità del danno: qualsiasi colpo toglie 1 punto (mezzo cuore).
      */
-    public void takeDamage(int damage) {
+    public void takeHit() {
         this.currentHp = Math.max(0, this.currentHp - 1);
     }
 

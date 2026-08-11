@@ -23,8 +23,13 @@ public class DungeonController {
     @FXML private Pane roomPane;
     @FXML private Label keysLabel;
 
-    private final DungeonService dungeonService = new DungeonService();
-    private final CombatUIManager combatUIManager = new CombatUIManager();
+    private final DungeonService dungeonService;
+    private final CombatUIManager combatUIManager;
+
+    public DungeonController(DungeonService dungeonService, CombatUIManager combatUIManager) {
+        this.dungeonService = dungeonService;
+        this.combatUIManager = combatUIManager;
+    }
 
     private Direction lastEntryDirection = null;
     private int selectedEnemyIndex = -1;
@@ -71,7 +76,6 @@ public class DungeonController {
         if (roomData.trapdoorActive()) {
             RoomRenderer.renderTrapdoor(roomPane, () -> {
                 dungeonService.advanceFloor();
-                combatUIManager.resetState();
                 lastEntryDirection = null;
                 selectedEnemyIndex = -1;
                 updateView();
@@ -101,7 +105,6 @@ public class DungeonController {
         restartBtn.setLayoutY(220);
 
         restartBtn.setOnAction(e -> {
-            combatUIManager.resetState();
             lastEntryDirection = null;
             selectedEnemyIndex = -1;
             dungeonService.startNewRun();
@@ -119,7 +122,6 @@ public class DungeonController {
     private void tryMove(Direction dir) {
         if (dungeonService.interactWithDirection(dir)) {
             lastEntryDirection = dir;
-            combatUIManager.resetState();
             selectedEnemyIndex = -1;
             updateView();
         } else {
@@ -131,7 +133,6 @@ public class DungeonController {
         String attackerName = dungeonService.getNextAttackerName();
 
         if (attackerName == null) {
-            combatUIManager.resetState();
             updateView();
             return;
         }
@@ -144,7 +145,6 @@ public class DungeonController {
                 pause.setOnFinished(e -> startEnemyTurnSequence());
                 pause.play();
             } else {
-                combatUIManager.resetState();
                 updateView();
             }
         });

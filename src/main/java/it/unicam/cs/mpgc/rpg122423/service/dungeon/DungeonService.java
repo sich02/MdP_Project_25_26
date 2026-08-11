@@ -4,6 +4,7 @@ import it.unicam.cs.mpgc.rpg122423.dto.*;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.DungeonLevel;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Floor;
+import it.unicam.cs.mpgc.rpg122423.model.combat.Enemy;
 import it.unicam.cs.mpgc.rpg122423.model.combat.Player;
 import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
@@ -44,11 +45,6 @@ public class DungeonService {
         return currentFloorNumber;
     }
 
-    public boolean movePlayer(Direction dir) {
-        if (currentLevel == null) return false;
-        return currentLevel.movePlayer(dir);
-    }
-
     public RoomDTO getCurrentRoomData() {
         if (currentLevel == null) throw new IllegalStateException("Livello non inizializzato");
         Coordinate currentPos = currentLevel.getCurrentPosition();
@@ -56,11 +52,11 @@ public class DungeonService {
 
         List<EnemyDTO> enemyDTOs = new ArrayList<>();
         String phase = "NONE";
-        boolean isBossRoom = false;
+        boolean isBossRoom = currentRoom instanceof BossRoom;
         boolean trapdoorActive = false;
 
-        if (currentRoom instanceof CombatRoom cr) {
-            for (var enemy : cr.getEnemies()) {
+        if (currentRoom instanceof Combattable combattable) {
+            for (Enemy enemy : combattable.getEnemies()) {
                 if (!enemy.isDead()) {
                     enemyDTOs.add(new EnemyDTO(
                             enemy.getName(),
@@ -70,24 +66,12 @@ public class DungeonService {
                     ));
                 }
             }
-            if (!cr.isCleared()) {
-                phase = cr.getCurrentPhase().name();
+            if (!currentRoom.isCleared()) {
+                phase = combattable.getCurrentPhase().name();
             }
-        } else if (currentRoom instanceof BossRoom br) {
-            isBossRoom = true;
-            for (var enemy : br.getEnemies()) {
-                if (!enemy.isDead()) {
-                    enemyDTOs.add(new EnemyDTO(
-                            enemy.getName(),
-                            enemy.getCurrentHp(),
-                            enemy.getMaxHp(),
-                            enemy.getNextAction().description()
-                    ));
-                }
-            }
-            if (!br.isCleared()) {
-                phase = br.getCurrentPhase().name();
-            }
+        }
+
+        if (currentRoom instanceof BossRoom br) {
             trapdoorActive = br.isTrapdoorActive();
         }
 
@@ -111,15 +95,8 @@ public class DungeonService {
             return new DoorDTO(false, "NONE", false);
         }
 
-        String type = "NORMAL";
+        String type = adjacentRoom.getRoomType();
         boolean locked = false;
-        if (adjacentRoom instanceof BossRoom) {
-            type = "BOSS";
-        } else if (adjacentRoom instanceof TreasureRoom) {
-            type = "TREASURE";
-        } else if (adjacentRoom instanceof ShopRoom) {
-            type = "SHOP";
-        }
 
         if (adjacentRoom instanceof Lockable lockableRoom) {
             locked = lockableRoom.isLocked();
@@ -131,20 +108,10 @@ public class DungeonService {
     public boolean interactWithDirection(Direction dir) {
         Room currentRoom = currentLevel.getCurrentRoom();
 
-        // Blocco porte per CombatRoom non cleared
-        if (currentRoom instanceof CombatRoom cr) {
-            if (!cr.isCleared()) {
-                System.out.println("Le porte sono bloccate! Devi sconfiggere l'orda prima di poter proseguire!");
-                return false;
-            }
-        }
-
-        // Blocco porte per BossRoom non cleared
-        if (currentRoom instanceof BossRoom br) {
-            if (!br.isCleared()) {
-                System.out.println("Le porte sono bloccate! Devi sconfiggere il Boss prima di poter proseguire!");
-                return false;
-            }
+        // Blocco porte per stanze di combattimento non cleared
+        if (currentRoom instanceof Combattable && !currentRoom.isCleared()) {
+            System.out.println("Le porte sono bloccate! Devi sconfiggere i nemici prima di poter proseguire!");
+            return false;
         }
 
         Coordinate targetPos = currentLevel.getCurrentPosition().moveTo(dir);
@@ -156,12 +123,21 @@ public class DungeonService {
             if (player.getKeys() > 0) {
                 player.consumeKey();
                 lockableRoom.unlock();
-                return true;
+                if (currentLevel.movePlayer(dir)) {
+                    player.resetTurnState();
+                    return true;
+                }
+                return false;
             }
             System.out.println("Ti serve una chiave per aprire questa porta!");
             return false;
         }
-        return currentLevel.movePlayer(dir);
+        
+        if (currentLevel.movePlayer(dir)) {
+            player.resetTurnState();
+            return true;
+        }
+        return false;
     }
 
     public PlayerDTO getPlayerData() {
@@ -177,125 +153,112 @@ public class DungeonService {
 
     public void endPlayerTurn() {
         Room currentRoom = currentLevel.getCurrentRoom();
-        if (currentRoom instanceof CombatRoom cr && !cr.isCleared()) {
-            cr.setPhase(TurnPhase.ENEMY_TURN);
-            cr.resetEnemyTurnIndex();
+        if (currentRoom instanceof Combattable combattable && !currentRoom.isCleared()) {
+            combattable.setPhase(TurnPhase.ENEMY_TURN);
+            combattable.resetEnemyTurnIndex();
             System.out.println("Turno del giocatore terminato. Inizia il turno dei nemici.");
-        } else if (currentRoom instanceof BossRoom br && !br.isCleared()) {
-            br.setPhase(TurnPhase.ENEMY_TURN);
-            br.resetEnemyTurnIndex();
-            System.out.println("Turno del giocatore terminato. Inizia il turno del Boss.");
+        }
+    }
+
+    // --- Metodi per la gestione del turno di combattimento (spostati dalla View) ---
+    public boolean getPlayerHasRolled() { return player != null && player.hasRolled(); }
+    public boolean getPlayerHasAttacked() { return player != null && player.hasAttacked(); }
+    public int getPlayerRerollsLeft() { return player != null ? player.getRerollsLeft() : 0; }
+    
+    public List<Integer> getPlayerDiceValues() {
+        if (player == null) return List.of(1, 1, 1, 1, 1);
+        return player.getDicePool().getValues();
+    }
+    
+    public void rollPlayerDice() {
+        if (player != null && !player.hasRolled()) {
+            player.getDicePool().rollAll();
+            player.setHasRolled(true);
+        }
+    }
+    
+    public void rerollPlayerDice(List<Integer> indices) {
+        if (player != null && player.hasRolled() && player.getRerollsLeft() > 0) {
+            player.getDicePool().rollSpecific(indices);
+            player.decrementRerolls();
         }
     }
 
     public void executePlayerAttack(int damage, int targetIndex) {
         Room currentRoom = currentLevel.getCurrentRoom();
 
-        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() != TurnPhase.ENEMY_TURN && !cr.isCleared()) {
-            List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
-                    cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
+        if (currentRoom instanceof Combattable combattable
+                && combattable.getCurrentPhase() != TurnPhase.ENEMY_TURN
+                && !currentRoom.isCleared()) {
+            List<Enemy> aliveEnemies = combattable.getEnemies().stream()
+                    .filter(e -> !e.isDead()).toList();
 
             if (targetIndex >= 0 && targetIndex < aliveEnemies.size()) {
-                var target = aliveEnemies.get(targetIndex);
+                Enemy target = aliveEnemies.get(targetIndex);
                 target.takeDamage(damage);
+                player.setHasAttacked(true);
                 System.out.println("Hai inflitto " + damage + " danni a " + target.getName() + "!");
-            }
-        } else if (currentRoom instanceof BossRoom br && br.getCurrentPhase() != TurnPhase.ENEMY_TURN && !br.isCleared()) {
-            // Il boss è sempre il target 0
-            var boss = br.getBoss();
-            if (!boss.isDead()) {
-                boss.takeDamage(damage);
-                System.out.println("Hai inflitto " + damage + " danni al Boss " + boss.getName() + "!");
             }
         }
     }
 
-    // --- Ritorna il nome del nemico che sta per attaccare per il QTE ---
+    /** Ritorna il nome del nemico che sta per attaccare per il QTE. */
     public String getNextAttackerName() {
         Room currentRoom = currentLevel.getCurrentRoom();
 
-        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
-            List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
-                    cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
-            if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
-                return aliveEnemies.get(cr.getCurrentEnemyTurnIndex()).getName();
-            }
-        } else if (currentRoom instanceof BossRoom br && br.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
-            if (!br.getBoss().isDead() && br.getCurrentEnemyTurnIndex() == 0) {
-                return br.getBoss().getName();
+        if (currentRoom instanceof Combattable combattable
+                && combattable.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
+            List<Enemy> aliveEnemies = combattable.getEnemies().stream()
+                    .filter(e -> !e.isDead()).toList();
+            if (combattable.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
+                return aliveEnemies.get(combattable.getCurrentEnemyTurnIndex()).getName();
             }
         }
 
         return null;
     }
 
-    // --- Accetta in input l'esito dello Skill Check manuale ---
+    /** Accetta in input l'esito dello Skill Check manuale. */
     public boolean executeNextEnemyTurn(boolean dodged) {
         Room currentRoom = currentLevel.getCurrentRoom();
 
-        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
-            return executeCombatRoomEnemyTurn(cr, dodged);
-        } else if (currentRoom instanceof BossRoom br && br.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
-            return executeBossRoomEnemyTurn(br, dodged);
+        if (currentRoom instanceof Combattable combattable
+                && combattable.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
+            return executeEnemyTurnFor(combattable, dodged);
         }
 
         return false;
     }
 
-    private boolean executeCombatRoomEnemyTurn(CombatRoom cr, boolean dodged) {
-        List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
-                cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
+    private boolean executeEnemyTurnFor(Combattable combattable, boolean dodged) {
+        List<Enemy> aliveEnemies = combattable.getEnemies().stream()
+                .filter(e -> !e.isDead()).toList();
 
-        if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
-            var actingEnemy = aliveEnemies.get(cr.getCurrentEnemyTurnIndex());
-            var action = actingEnemy.getNextAction();
+        if (combattable.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
+            Enemy actingEnemy = aliveEnemies.get(combattable.getCurrentEnemyTurnIndex());
+            EnemyAction action = actingEnemy.getNextAction();
 
             if (!dodged) {
-                player.takeDamage(action.damage());
+                player.takeHit();
                 System.out.println(actingEnemy.getName() + " ti colpisce e infligge " + action.damage() + " danni!");
             } else {
                 System.out.println("SCHIVATA PERFETTA! " + actingEnemy.getName() + " ti ha mancato.");
             }
 
             actingEnemy.prepareNextAction();
-            cr.advanceEnemyTurnIndex();
+            combattable.advanceEnemyTurnIndex();
 
-            if (cr.getCurrentEnemyTurnIndex() >= aliveEnemies.size()) {
-                cr.setPhase(TurnPhase.INITIAL_ROLL);
-                cr.resetEnemyTurnIndex();
+            if (combattable.getCurrentEnemyTurnIndex() >= aliveEnemies.size()) {
+                combattable.setPhase(TurnPhase.INITIAL_ROLL);
+                combattable.resetEnemyTurnIndex();
+                player.resetTurnState();
             }
             return true;
         }
 
-        cr.setPhase(TurnPhase.INITIAL_ROLL);
-        cr.resetEnemyTurnIndex();
-        return false;
-    }
-
-    private boolean executeBossRoomEnemyTurn(BossRoom br, boolean dodged) {
-        var boss = br.getBoss();
-
-        if (!boss.isDead() && br.getCurrentEnemyTurnIndex() == 0) {
-            var action = boss.getNextAction();
-
-            if (!dodged) {
-                player.takeDamage(action.damage());
-                System.out.println("Il Boss " + boss.getName() + " ti colpisce e infligge " + action.damage() + " danni!");
-            } else {
-                System.out.println("SCHIVATA PERFETTA! Il Boss " + boss.getName() + " ti ha mancato.");
-            }
-
-            boss.prepareNextAction();
-            br.advanceEnemyTurnIndex();
-
-            // Il boss è un solo nemico, fine del suo turno
-            br.setPhase(TurnPhase.INITIAL_ROLL);
-            br.resetEnemyTurnIndex();
-            return true;
-        }
-
-        br.setPhase(TurnPhase.INITIAL_ROLL);
-        br.resetEnemyTurnIndex();
+        combattable.setPhase(TurnPhase.INITIAL_ROLL);
+        combattable.resetEnemyTurnIndex();
+        player.resetTurnState();
         return false;
     }
 }

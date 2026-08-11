@@ -23,16 +23,25 @@ import java.util.function.Consumer;
  */
 public class RoomRenderer {
 
+    private static final double ROOM_WIDTH = 600;
+    private static final double ROOM_HEIGHT = 400;
+    private static final double DOOR_SIZE = 60;
+    private static final double PLAYER_SIZE = 100;
+    private static final double NORMAL_ENEMY_SIZE = 45;
+    private static final double BOSS_ENEMY_SIZE = 80;
+    private static final double TRAPDOOR_SIZE = 60;
+    private static final double PADDING = 50;
+
     public static void renderFloor(Pane roomPane) {
         try {
             Image floorImg = new Image(RoomRenderer.class.getResourceAsStream("/assets/floor.png"));
             ImageView floorSprite = new ImageView(floorImg);
-            floorSprite.setFitWidth(600);
-            floorSprite.setFitHeight(400);
+            floorSprite.setFitWidth(ROOM_WIDTH);
+            floorSprite.setFitHeight(ROOM_HEIGHT);
             floorSprite.setSmooth(false);
             roomPane.getChildren().add(floorSprite);
         } catch (Exception e) {
-            Rectangle fallback = new Rectangle(600, 400, Color.web("#6d4a3d"));
+            Rectangle fallback = new Rectangle(ROOM_WIDTH, ROOM_HEIGHT, Color.web("#6d4a3d"));
             roomPane.getChildren().add(fallback);
         }
     }
@@ -47,7 +56,7 @@ public class RoomRenderer {
     private static void renderSingleDoor(Pane roomPane, DoorDTO doorInfo, Direction dir) {
         if (!doorInfo.exists()) return;
 
-        double doorSize = 60;
+        double doorSize = DOOR_SIZE;
         String imagePath = "/assets/floorDoor.png";
 
         switch (doorInfo.roomType()) {
@@ -69,11 +78,14 @@ public class RoomRenderer {
                 case WEST -> { doorSprite.setX(-15); doorSprite.setY(170); doorSprite.setRotate(270); }
             }
             roomPane.getChildren().add(doorSprite);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.err.println("Errore nel rendering della porta " + dir + ": " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public static void renderPlayer(Pane roomPane, Direction lastEntryDirection) {
-        double playerSize = 100;
+        double playerSize = PLAYER_SIZE;
         try {
             ImageView playerSprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream("/assets/player.png")));
             playerSprite.setFitWidth(playerSize);
@@ -81,44 +93,47 @@ public class RoomRenderer {
             playerSprite.setPreserveRatio(true);
             playerSprite.setSmooth(false);
 
-            double spawnX = (600 / 2.0) - (playerSize / 2.0);
-            double spawnY = (400 / 2.0) - (playerSize / 2.0);
-            double padding = 50;
+            double spawnX = (ROOM_WIDTH / 2.0) - (playerSize / 2.0);
+            double spawnY = (ROOM_HEIGHT / 2.0) - (playerSize / 2.0);
+            double padding = PADDING;
 
             if (lastEntryDirection != null) {
                 switch (lastEntryDirection) {
-                    case NORTH -> spawnY = 400 - playerSize - padding + 20;
+                    case NORTH -> spawnY = ROOM_HEIGHT - playerSize - padding + 20;
                     case SOUTH -> spawnY = padding - 20;
                     case EAST -> spawnX = padding - 20;
-                    case WEST -> spawnX = 600 - playerSize - padding + 20;
+                    case WEST -> spawnX = ROOM_WIDTH - playerSize - padding + 20;
                 }
             }
             playerSprite.setX(spawnX);
             playerSprite.setY(spawnY);
             roomPane.getChildren().add(playerSprite);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.err.println("Errore nel rendering del player: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public static int calculateClosestEnemy(List<EnemyDTO> enemies, Direction lastEntryDirection) {
         if (enemies == null || enemies.isEmpty()) return -1;
 
-        double playerSize = 100;
-        double pX = (600 / 2.0);
-        double pY = (400 / 2.0);
-        double padding = 50;
+        double playerSize = PLAYER_SIZE;
+        double pX = (ROOM_WIDTH / 2.0);
+        double pY = (ROOM_HEIGHT / 2.0);
+        double padding = PADDING;
 
         if (lastEntryDirection != null) {
             switch (lastEntryDirection) {
-                case NORTH -> pY = 400 - playerSize - padding + 20 + (playerSize / 2.0);
+                case NORTH -> pY = ROOM_HEIGHT - playerSize - padding + 20 + (playerSize / 2.0);
                 case SOUTH -> pY = padding - 20 + (playerSize / 2.0);
                 case EAST -> pX = padding - 20 + (playerSize / 2.0);
-                case WEST -> pX = 600 - playerSize - padding + 20 + (playerSize / 2.0);
+                case WEST -> pX = ROOM_WIDTH - playerSize - padding + 20 + (playerSize / 2.0);
             }
         }
 
-        double enemySize = 45;
-        double centerX = (600 / 2.0) - (enemySize / 2.0);
-        double centerY = (400 / 2.0) - (enemySize / 2.0);
+        double enemySize = NORMAL_ENEMY_SIZE;
+        double centerX = (ROOM_WIDTH / 2.0) - (enemySize / 2.0);
+        double centerY = (ROOM_HEIGHT / 2.0) - (enemySize / 2.0);
         double[][] positions = { {centerX, centerY}, {centerX - 120, centerY - 80}, {centerX + 120, centerY - 80}, {centerX - 120, centerY + 80}, {centerX + 120, centerY + 80} };
 
         int closestIndex = 0;
@@ -139,9 +154,9 @@ public class RoomRenderer {
     public static void renderEnemies(Pane roomPane, List<EnemyDTO> enemies, int selectedEnemyIndex, Consumer<Integer> onEnemySelected, boolean isBossRoom) {
         if (enemies == null || enemies.isEmpty()) return;
 
-        double enemySize = isBossRoom ? 80 : 45;
-        double centerX = (600 / 2.0) - (enemySize / 2.0);
-        double centerY = (400 / 2.0) - (enemySize / 2.0);
+        double enemySize = isBossRoom ? BOSS_ENEMY_SIZE : NORMAL_ENEMY_SIZE;
+        double centerX = (ROOM_WIDTH / 2.0) - (enemySize / 2.0);
+        double centerY = (ROOM_HEIGHT / 2.0) - (enemySize / 2.0);
         double[][] positions = { {centerX, centerY}, {centerX - 120, centerY - 80}, {centerX + 120, centerY - 80}, {centerX - 120, centerY + 80}, {centerX + 120, centerY + 80} };
 
         try {
@@ -195,18 +210,21 @@ public class RoomRenderer {
 
                 roomPane.getChildren().add(enemyGroup);
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.err.println("Errore nel rendering dei nemici: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /** Renderizza la botola al centro della stanza per avanzare di piano. */
     public static void renderTrapdoor(Pane roomPane, Runnable onClick) {
         try {
             ImageView trapdoor = new ImageView(new Image(RoomRenderer.class.getResourceAsStream("/assets/change floor trapdor.png")));
-            trapdoor.setFitWidth(60);
+            trapdoor.setFitWidth(TRAPDOOR_SIZE);
             trapdoor.setPreserveRatio(true);
             trapdoor.setSmooth(false);
-            trapdoor.setX((600 / 2.0) - 30);
-            trapdoor.setY((400 / 2.0) - 30);
+            trapdoor.setX((ROOM_WIDTH / 2.0) - (TRAPDOOR_SIZE / 2.0));
+            trapdoor.setY((ROOM_HEIGHT / 2.0) - (TRAPDOOR_SIZE / 2.0));
             trapdoor.setCursor(Cursor.HAND);
 
             DropShadow glow = new DropShadow();
@@ -217,12 +235,15 @@ public class RoomRenderer {
 
             Label hint = new Label("Scendi al piano successivo");
             hint.setStyle("-fx-text-fill: #ffd700; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 3px;");
-            hint.setLayoutX((600 / 2.0) - 80);
-            hint.setLayoutY((400 / 2.0) + 35);
+            hint.setLayoutX((ROOM_WIDTH / 2.0) - 80);
+            hint.setLayoutY((ROOM_HEIGHT / 2.0) + 35);
 
             trapdoor.setOnMouseClicked(e -> onClick.run());
 
             roomPane.getChildren().addAll(trapdoor, hint);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.err.println("Errore nel rendering della botola: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
