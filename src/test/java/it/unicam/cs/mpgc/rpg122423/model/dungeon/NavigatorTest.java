@@ -2,7 +2,6 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.dto.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.CombatRoom;
-import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Direction;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,7 @@ class NavigatorTest {
     void testNavigationAndLocking() {
         Map<Coordinate, Room> map = new HashMap<>();
         map.put(new Coordinate(0, 0), new SpawnRoom());
-        CombatRoom hostileRoom = new CombatRoom(false);
+        CombatRoom hostileRoom = new CombatRoom(false, 1);
         map.put(new Coordinate(0, 1), hostileRoom);
 
         Floor floor = new Floor(1, map);

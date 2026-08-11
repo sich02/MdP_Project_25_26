@@ -7,7 +7,7 @@ class CombatRoomTest {
 
     @Test
     void testRoomWithoutLoot() {
-        CombatRoom room = new CombatRoom(false);
+        CombatRoom room = new CombatRoom(false, 1);
 
         assertFalse(room.isCleared(), "La CombatRoom non deve essere risolta appena creata.");
         assertFalse(room.hasLoot(), "Una stanza generata senza loot non deve mai averlo, anche all'inizio.");
@@ -20,7 +20,7 @@ class CombatRoomTest {
 
     @Test
     void testRoomWithLootRequiresClearing() {
-        CombatRoom room = new CombatRoom(true);
+        CombatRoom room = new CombatRoom(true, 1);
 
         assertFalse(room.hasLoot(), "Il loot non deve essere disponibile PRIMA di aver pulito la stanza.");
 
@@ -31,7 +31,7 @@ class CombatRoomTest {
 
     @Test
     void testClaimLootIsIdempotent() {
-        CombatRoom room = new CombatRoom(true);
+        CombatRoom room = new CombatRoom(true, 1);
 
         room.markAsCleared(); // Rendiamo il loot disponibile
         room.claimLoot();
