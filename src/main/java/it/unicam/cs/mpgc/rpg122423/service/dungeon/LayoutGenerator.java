@@ -37,7 +37,7 @@ public class LayoutGenerator {
         Coordinate shopCoord = !deadEnds.isEmpty() ? deadEnds.remove(0) : null;
         Map<Coordinate, Room> layout = new HashMap<>();
         layout.put(spawn, new SpawnRoom());
-        layout.put(bossRoomCoord, new BossRoom());
+        layout.put(bossRoomCoord, new BossRoom(floorNumber));
 
         if (treasureCoord != null) {
             boolean requiresKey = floorNumber >= 2;

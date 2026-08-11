@@ -8,5 +8,7 @@ public record RoomDTO(
         DoorDTO east,
         DoorDTO west,
         List<EnemyDTO> enemies,
-        String combatPhase
+        String combatPhase,
+        boolean isBossRoom,
+        boolean trapdoorActive
 ) {}

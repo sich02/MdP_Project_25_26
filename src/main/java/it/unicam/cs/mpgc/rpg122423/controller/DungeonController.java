@@ -19,6 +19,7 @@ public class DungeonController {
 
     @FXML private Label hpLabel;
     @FXML private Label goldLabel;
+    @FXML private Label floorLabel;
     @FXML private Pane roomPane;
     @FXML private Label keysLabel;
 
@@ -62,13 +63,25 @@ public class DungeonController {
                 selectedEnemyIndex = newIndex;
                 updateView();
             }
-        });
+        }, roomData.isBossRoom());
 
         RoomRenderer.renderPlayer(roomPane, lastEntryDirection);
+
+        // Renderizza la botola se il boss è stato sconfitto
+        if (roomData.trapdoorActive()) {
+            RoomRenderer.renderTrapdoor(roomPane, () -> {
+                dungeonService.advanceFloor();
+                combatUIManager.resetState();
+                lastEntryDirection = null;
+                selectedEnemyIndex = -1;
+                updateView();
+            });
+        }
 
         hpLabel.setText("Cuori: " + playerStats.currentHearts() + " / " + playerStats.maxHearts());
         goldLabel.setText("Oro: " + playerStats.gold());
         keysLabel.setText("Chiavi: " + playerStats.keys());
+        floorLabel.setText("Piano: " + dungeonService.getCurrentFloorNumber());
 
         combatUIManager.render(roomPane, roomData, dungeonService, selectedEnemyIndex, this::updateView, this::startEnemyTurnSequence);
     }

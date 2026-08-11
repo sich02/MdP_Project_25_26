@@ -23,11 +23,25 @@ public class DungeonService {
     }
 
     public void startNewRun() {
+        this.currentFloorNumber = 1;
         System.out.println("Generazione procedurale del Piano " + currentFloorNumber + " in corso...");
         this.player = new Player();
         Floor floor = generator.generateFloor(currentFloorNumber);
         this.currentLevel = new DungeonLevel(floor.getRooms(), floor.getStartingCoordinate());
         System.out.println("Piano generato e pronto all'esplorazione!");
+    }
+
+    /** Avanza al piano successivo. Genera un nuovo layout e resetta la posizione. */
+    public void advanceFloor() {
+        currentFloorNumber++;
+        System.out.println("Avanzamento al Piano " + currentFloorNumber + "...");
+        Floor floor = generator.generateFloor(currentFloorNumber);
+        this.currentLevel = new DungeonLevel(floor.getRooms(), floor.getStartingCoordinate());
+        System.out.println("Piano " + currentFloorNumber + " generato!");
+    }
+
+    public int getCurrentFloorNumber() {
+        return currentFloorNumber;
     }
 
     public boolean movePlayer(Direction dir) {
@@ -41,6 +55,9 @@ public class DungeonService {
         Room currentRoom = currentLevel.getCurrentRoom();
 
         List<EnemyDTO> enemyDTOs = new ArrayList<>();
+        String phase = "NONE";
+        boolean isBossRoom = false;
+        boolean trapdoorActive = false;
 
         if (currentRoom instanceof CombatRoom cr) {
             for (var enemy : cr.getEnemies()) {
@@ -53,11 +70,25 @@ public class DungeonService {
                     ));
                 }
             }
-        }
-
-        String phase = "NONE";
-        if (currentRoom instanceof CombatRoom cr && !cr.isCleared()) {
-            phase = cr.getCurrentPhase().name();
+            if (!cr.isCleared()) {
+                phase = cr.getCurrentPhase().name();
+            }
+        } else if (currentRoom instanceof BossRoom br) {
+            isBossRoom = true;
+            for (var enemy : br.getEnemies()) {
+                if (!enemy.isDead()) {
+                    enemyDTOs.add(new EnemyDTO(
+                            enemy.getName(),
+                            enemy.getCurrentHp(),
+                            enemy.getMaxHp(),
+                            enemy.getNextAction().description()
+                    ));
+                }
+            }
+            if (!br.isCleared()) {
+                phase = br.getCurrentPhase().name();
+            }
+            trapdoorActive = br.isTrapdoorActive();
         }
 
         return new RoomDTO(
@@ -66,7 +97,9 @@ public class DungeonService {
                 inspectDoor(currentPos, Direction.EAST),
                 inspectDoor(currentPos, Direction.WEST),
                 enemyDTOs,
-                phase
+                phase,
+                isBossRoom,
+                trapdoorActive
         );
     }
 
@@ -97,9 +130,19 @@ public class DungeonService {
 
     public boolean interactWithDirection(Direction dir) {
         Room currentRoom = currentLevel.getCurrentRoom();
+
+        // Blocco porte per CombatRoom non cleared
         if (currentRoom instanceof CombatRoom cr) {
             if (!cr.isCleared()) {
                 System.out.println("Le porte sono bloccate! Devi sconfiggere l'orda prima di poter proseguire!");
+                return false;
+            }
+        }
+
+        // Blocco porte per BossRoom non cleared
+        if (currentRoom instanceof BossRoom br) {
+            if (!br.isCleared()) {
+                System.out.println("Le porte sono bloccate! Devi sconfiggere il Boss prima di poter proseguire!");
                 return false;
             }
         }
@@ -138,13 +181,17 @@ public class DungeonService {
             cr.setPhase(TurnPhase.ENEMY_TURN);
             cr.resetEnemyTurnIndex();
             System.out.println("Turno del giocatore terminato. Inizia il turno dei nemici.");
+        } else if (currentRoom instanceof BossRoom br && !br.isCleared()) {
+            br.setPhase(TurnPhase.ENEMY_TURN);
+            br.resetEnemyTurnIndex();
+            System.out.println("Turno del giocatore terminato. Inizia il turno del Boss.");
         }
     }
 
     public void executePlayerAttack(int damage, int targetIndex) {
         Room currentRoom = currentLevel.getCurrentRoom();
-        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() != TurnPhase.ENEMY_TURN && !cr.isCleared()) {
 
+        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() != TurnPhase.ENEMY_TURN && !cr.isCleared()) {
             List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
                     cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
 
@@ -153,33 +200,51 @@ public class DungeonService {
                 target.takeDamage(damage);
                 System.out.println("Hai inflitto " + damage + " danni a " + target.getName() + "!");
             }
+        } else if (currentRoom instanceof BossRoom br && br.getCurrentPhase() != TurnPhase.ENEMY_TURN && !br.isCleared()) {
+            // Il boss è sempre il target 0
+            var boss = br.getBoss();
+            if (!boss.isDead()) {
+                boss.takeDamage(damage);
+                System.out.println("Hai inflitto " + damage + " danni al Boss " + boss.getName() + "!");
+            }
         }
     }
 
-    // --- NUOVO: Ritorna il nome del nemico che sta per attaccare per il QTE ---
+    // --- Ritorna il nome del nemico che sta per attaccare per il QTE ---
     public String getNextAttackerName() {
         Room currentRoom = currentLevel.getCurrentRoom();
+
         if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
-            List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies = cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
+            List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
+                    cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
             if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
                 return aliveEnemies.get(cr.getCurrentEnemyTurnIndex()).getName();
             }
+        } else if (currentRoom instanceof BossRoom br && br.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
+            if (!br.getBoss().isDead() && br.getCurrentEnemyTurnIndex() == 0) {
+                return br.getBoss().getName();
+            }
         }
+
         return null;
     }
 
-    // --- AGGIORNATO: Accetta in input l'esito dello Skill Check manuale ---
+    // --- Accetta in input l'esito dello Skill Check manuale ---
     public boolean executeNextEnemyTurn(boolean dodged) {
         Room currentRoom = currentLevel.getCurrentRoom();
 
-        if (!(currentRoom instanceof CombatRoom cr) || cr.getCurrentPhase() != TurnPhase.ENEMY_TURN) {
-            return false;
+        if (currentRoom instanceof CombatRoom cr && cr.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
+            return executeCombatRoomEnemyTurn(cr, dodged);
+        } else if (currentRoom instanceof BossRoom br && br.getCurrentPhase() == TurnPhase.ENEMY_TURN) {
+            return executeBossRoomEnemyTurn(br, dodged);
         }
 
+        return false;
+    }
+
+    private boolean executeCombatRoomEnemyTurn(CombatRoom cr, boolean dodged) {
         List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> aliveEnemies =
-                cr.getEnemies().stream()
-                        .filter(e -> !e.isDead())
-                        .toList();
+                cr.getEnemies().stream().filter(e -> !e.isDead()).toList();
 
         if (cr.getCurrentEnemyTurnIndex() < aliveEnemies.size()) {
             var actingEnemy = aliveEnemies.get(cr.getCurrentEnemyTurnIndex());
@@ -204,6 +269,33 @@ public class DungeonService {
 
         cr.setPhase(TurnPhase.INITIAL_ROLL);
         cr.resetEnemyTurnIndex();
+        return false;
+    }
+
+    private boolean executeBossRoomEnemyTurn(BossRoom br, boolean dodged) {
+        var boss = br.getBoss();
+
+        if (!boss.isDead() && br.getCurrentEnemyTurnIndex() == 0) {
+            var action = boss.getNextAction();
+
+            if (!dodged) {
+                player.takeDamage(action.damage());
+                System.out.println("Il Boss " + boss.getName() + " ti colpisce e infligge " + action.damage() + " danni!");
+            } else {
+                System.out.println("SCHIVATA PERFETTA! Il Boss " + boss.getName() + " ti ha mancato.");
+            }
+
+            boss.prepareNextAction();
+            br.advanceEnemyTurnIndex();
+
+            // Il boss è un solo nemico, fine del suo turno
+            br.setPhase(TurnPhase.INITIAL_ROLL);
+            br.resetEnemyTurnIndex();
+            return true;
+        }
+
+        br.setPhase(TurnPhase.INITIAL_ROLL);
+        br.resetEnemyTurnIndex();
         return false;
     }
 }

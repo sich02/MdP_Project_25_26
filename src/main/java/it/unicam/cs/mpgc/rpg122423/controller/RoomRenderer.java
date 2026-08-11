@@ -136,10 +136,10 @@ public class RoomRenderer {
         return closestIndex;
     }
 
-    public static void renderEnemies(Pane roomPane, List<EnemyDTO> enemies, int selectedEnemyIndex, Consumer<Integer> onEnemySelected) {
+    public static void renderEnemies(Pane roomPane, List<EnemyDTO> enemies, int selectedEnemyIndex, Consumer<Integer> onEnemySelected, boolean isBossRoom) {
         if (enemies == null || enemies.isEmpty()) return;
 
-        double enemySize = 45;
+        double enemySize = isBossRoom ? 80 : 45;
         double centerX = (600 / 2.0) - (enemySize / 2.0);
         double centerY = (400 / 2.0) - (enemySize / 2.0);
         double[][] positions = { {centerX, centerY}, {centerX - 120, centerY - 80}, {centerX + 120, centerY - 80}, {centerX - 120, centerY + 80}, {centerX + 120, centerY + 80} };
@@ -154,6 +154,11 @@ public class RoomRenderer {
                     case "Blood Cultist" -> "Blood_Cultist.png";
                     case "Coal Boy" -> "Coal_Boy.png";
                     case "Cultist" -> "Cultist.png";
+                    // Boss sprites
+                    case "Conquest" -> "Boss_Conquest_Rebirth_ingame.png";
+                    case "Dark One" -> "Boss_Dark_One_Rebirth_ingame.png";
+                    case "Famine" -> "Boss_Famine_spitting_ingame.png";
+                    case "Little Horn" -> "Boss_Little_Horn_black_ingame.png";
                     default -> "Black_Bony_Afterbirth.png";
                 };
 
@@ -190,6 +195,34 @@ public class RoomRenderer {
 
                 roomPane.getChildren().add(enemyGroup);
             }
+        } catch (Exception e) {}
+    }
+
+    /** Renderizza la botola al centro della stanza per avanzare di piano. */
+    public static void renderTrapdoor(Pane roomPane, Runnable onClick) {
+        try {
+            ImageView trapdoor = new ImageView(new Image(RoomRenderer.class.getResourceAsStream("/assets/change floor trapdor.png")));
+            trapdoor.setFitWidth(60);
+            trapdoor.setPreserveRatio(true);
+            trapdoor.setSmooth(false);
+            trapdoor.setX((600 / 2.0) - 30);
+            trapdoor.setY((400 / 2.0) - 30);
+            trapdoor.setCursor(Cursor.HAND);
+
+            DropShadow glow = new DropShadow();
+            glow.setColor(Color.ORANGE);
+            glow.setSpread(0.5);
+            glow.setRadius(15);
+            trapdoor.setEffect(glow);
+
+            Label hint = new Label("Scendi al piano successivo");
+            hint.setStyle("-fx-text-fill: #ffd700; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 3px;");
+            hint.setLayoutX((600 / 2.0) - 80);
+            hint.setLayoutY((400 / 2.0) + 35);
+
+            trapdoor.setOnMouseClicked(e -> onClick.run());
+
+            roomPane.getChildren().addAll(trapdoor, hint);
         } catch (Exception e) {}
     }
 }
