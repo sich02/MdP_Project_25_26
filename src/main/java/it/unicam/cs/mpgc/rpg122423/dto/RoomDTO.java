@@ -10,5 +10,8 @@ public record RoomDTO(
         List<EnemyDTO> enemies,
         String combatPhase,
         boolean isBossRoom,
-        boolean trapdoorActive
+        boolean trapdoorActive,
+        boolean hasLoot,
+        String lootImagePath,
+        String lootName
 ) {}

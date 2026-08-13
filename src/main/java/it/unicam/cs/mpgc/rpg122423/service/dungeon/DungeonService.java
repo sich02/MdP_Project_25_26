@@ -2,12 +2,15 @@ package it.unicam.cs.mpgc.rpg122423.service.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.dto.*;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.DungeonLevel;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Floor;
 import it.unicam.cs.mpgc.rpg122423.model.combat.Enemy;
 import it.unicam.cs.mpgc.rpg122423.model.combat.Player;
 import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.*;
+
+import it.unicam.cs.mpgc.rpg122423.model.item.Item;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -54,6 +57,20 @@ public class DungeonService {
         String phase = "NONE";
         boolean isBossRoom = currentRoom instanceof BossRoom;
         boolean trapdoorActive = false;
+        boolean hasLoot = false;
+        String lootImagePath = null;
+        String lootName = null;
+
+        // Forza l'aggiornamento dello stato della stanza (es. genera il loot se il boss è morto)
+        boolean isRoomCleared = currentRoom.isCleared();
+
+        if (currentRoom instanceof Lootable lootable) {
+            hasLoot = lootable.hasLoot();
+            if (hasLoot && lootable.getLoot() != null) {
+                lootImagePath = lootable.getLoot().getImagePath();
+                lootName = lootable.getLoot().getName();
+            }
+        }
 
         if (currentRoom instanceof Combattable combattable) {
             for (Enemy enemy : combattable.getEnemies()) {
@@ -66,7 +83,7 @@ public class DungeonService {
                     ));
                 }
             }
-            if (!currentRoom.isCleared()) {
+            if (!isRoomCleared) {
                 phase = combattable.getCurrentPhase().name();
             }
         }
@@ -83,7 +100,10 @@ public class DungeonService {
                 enemyDTOs,
                 phase,
                 isBossRoom,
-                trapdoorActive
+                trapdoorActive,
+                hasLoot,
+                lootImagePath,
+                lootName
         );
     }
 
@@ -140,6 +160,20 @@ public class DungeonService {
         return false;
     }
 
+    public it.unicam.cs.mpgc.rpg122423.model.item.Item claimLootInCurrentRoom() {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof Lootable lootable && lootable.hasLoot()) {
+            it.unicam.cs.mpgc.rpg122423.model.item.Item loot = lootable.getLoot();
+            if (loot != null) {
+                loot.onPickup(player);
+                System.out.println("Hai raccolto: " + loot.getName());
+            }
+            lootable.claimLoot();
+            return loot;
+        }
+        return null;
+    }
+
     public PlayerDTO getPlayerData() {
         if (player == null) throw new IllegalStateException("Player non inizializzato");
 
@@ -147,7 +181,8 @@ public class DungeonService {
                 player.getHeartsForDisplay(),
                 player.getMaxHp() / 2.0,
                 player.getGold(),
-                player.getKeys()
+                player.getKeys(),
+                player.getBonusDamage()
         );
     }
 
@@ -168,6 +203,19 @@ public class DungeonService {
     public List<Integer> getPlayerDiceValues() {
         if (player == null) return List.of(1, 1, 1, 1, 1);
         return player.getDicePool().getValues();
+    }
+    
+    public List<it.unicam.cs.mpgc.rpg122423.model.dice.Element> getPlayerDiceElements() {
+        if (player == null) return List.of();
+        return player.getDicePool().getDiceList().stream()
+                .map(it.unicam.cs.mpgc.rpg122423.model.dice.Dice::getElement)
+                .toList();
+    }
+    
+    public void setPlayerDiceElement(int index, it.unicam.cs.mpgc.rpg122423.model.dice.Element element) {
+        if (player != null && index >= 0 && index < player.getDicePool().getSize()) {
+            player.getDicePool().getDiceList().get(index).setElement(element);
+        }
     }
     
     public void rollPlayerDice() {
@@ -196,6 +244,17 @@ public class DungeonService {
             if (targetIndex >= 0 && targetIndex < aliveEnemies.size()) {
                 Enemy target = aliveEnemies.get(targetIndex);
                 target.takeDamage(damage);
+
+                // Applica effetti elementali (es. Fuoco al 35% di probabilità per ogni dado)
+                for (it.unicam.cs.mpgc.rpg122423.model.dice.Dice d : player.getDicePool().getDiceList()) {
+                    if (d.getElement() == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
+                        if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < 0.35) {
+                            target.addStatusEffect(new it.unicam.cs.mpgc.rpg122423.model.status.BurnEffect(target, d.getCurrentValue()));
+                            System.out.println("🔥 " + target.getName() + " è stato bruciato! (Danno: " + d.getCurrentValue() + ")");
+                        }
+                    }
+                }
+
                 player.setHasAttacked(true);
                 System.out.println("Hai inflitto " + damage + " danni a " + target.getName() + "!");
             }
@@ -246,6 +305,8 @@ public class DungeonService {
             }
 
             actingEnemy.prepareNextAction();
+            actingEnemy.tickStatusEffects(); // Applica i danni nel tempo a fine turno (es. Bruciatura)
+            
             combattable.advanceEnemyTurnIndex();
 
             if (combattable.getCurrentEnemyTurnIndex() >= aliveEnemies.size()) {

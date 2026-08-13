@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
 import it.unicam.cs.mpgc.rpg122423.model.combat.Enemy;
 import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
+import it.unicam.cs.mpgc.rpg122423.model.item.Item;
 
 import java.util.List;
 
@@ -64,6 +65,9 @@ public class CombatRoom implements Room, Lootable, Combattable {
     // --- Lootable ---
     @Override
     public boolean hasLoot() { return isCleared() && generatesLoot && lootAvailable; }
+
+    @Override
+    public Item getLoot() { return null; } // Da implementare in futuro con consumabili
 
     @Override
     public void claimLoot() { this.lootAvailable = false; }

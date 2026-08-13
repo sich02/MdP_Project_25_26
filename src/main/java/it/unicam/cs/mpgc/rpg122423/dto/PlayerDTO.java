@@ -4,5 +4,6 @@ public record PlayerDTO(
         double currentHearts,
         double maxHearts,
         int gold,
-        int keys
+        int keys,
+        int bonusDamage
 ) {}

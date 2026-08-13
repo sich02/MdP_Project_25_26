@@ -65,6 +65,7 @@ public class CombatUIManager {
         boolean hasPlayerAttacked = dungeonService.getPlayerHasAttacked();
         int rerollsLeft = dungeonService.getPlayerRerollsLeft();
         java.util.List<Integer> currentDiceRolls = dungeonService.getPlayerDiceValues();
+        int bonusDamage = dungeonService.getPlayerData().bonusDamage();
 
         Label totalLabel = new Label("TOTALE:\n0");
         totalLabel.setStyle(
@@ -91,6 +92,7 @@ public class CombatUIManager {
         Label[] diceLabels = new Label[5];
 
         Button attackBtn = new Button("⚔ Attacca");
+        java.util.List<it.unicam.cs.mpgc.rpg122423.model.dice.Element> diceElements = dungeonService.getPlayerDiceElements();
 
         for (int i = 0; i < 5; i++) {
             VBox singleDiceBox = new VBox(2);
@@ -102,6 +104,15 @@ public class CombatUIManager {
             diceSprite.setPreserveRatio(true);
             diceSprite.setSmooth(false);
             diceSprite.setImage(getDiceImage(currentDiceRolls.get(i)));
+            
+            if (diceElements != null && i < diceElements.size() && diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
+                javafx.scene.effect.DropShadow fireGlow = new javafx.scene.effect.DropShadow();
+                fireGlow.setColor(Color.ORANGERED);
+                fireGlow.setRadius(10);
+                fireGlow.setSpread(0.6);
+                diceSprite.setEffect(fireGlow);
+            }
+            
             diceViews[i] = diceSprite;
 
             Label diceDmgLabel = new Label(hasPlayerRolled ? "+" + currentDiceRolls.get(i) : "");
@@ -123,7 +134,7 @@ public class CombatUIManager {
                     comboNameLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 14px;");
 
                     playSingleDiceRollAnimation(finalI, newValues, diceViews, diceLabels[finalI], totalLabel,
-                            comboNameLabel, attackBtn, () -> {
+                            comboNameLabel, attackBtn, bonusDamage, () -> {
                                 isAnimating = false;
                                 updateViewCallback.run();
                             });
@@ -138,7 +149,7 @@ public class CombatUIManager {
         mainDiceArea.getChildren().addAll(totalAndRerollBox, overlayAndDiceBox);
 
         if (hasPlayerRolled && !isAnimating) {
-            updateComboUI(totalLabel, comboNameLabel, attackBtn, diceViews, currentDiceRolls, hasPlayerRolled);
+            updateComboUI(totalLabel, comboNameLabel, attackBtn, diceViews, currentDiceRolls, hasPlayerRolled, bonusDamage);
         }
 
         VBox buttonsBox = new VBox(5);
@@ -168,15 +179,16 @@ public class CombatUIManager {
             dungeonService.rollPlayerDice();
             java.util.List<Integer> targetValues = dungeonService.getPlayerDiceValues();
 
-            playCascadingRollAnimation(0, targetValues, diceViews, diceLabels, totalLabel, comboNameLabel, attackBtn, () -> {
+            playCascadingRollAnimation(0, targetValues, diceViews, diceLabels, totalLabel, comboNameLabel, attackBtn, bonusDamage, () -> {
                 isAnimating = false;
                 updateViewCallback.run();
             });
         });
 
         attackBtn.setOnAction(e -> {
-            int finalDmg = ComboEvaluator.evaluate(currentDiceRolls).totalDamage();
-            dungeonService.executePlayerAttack(finalDmg, selectedEnemyIndex);
+            int baseDmg = ComboEvaluator.evaluate(currentDiceRolls.stream().mapToInt(i -> i).toArray()).totalDamage();
+            int bonus = bonusDamage * currentDiceRolls.size();
+            dungeonService.executePlayerAttack(baseDmg + bonus, selectedEnemyIndex);
             updateViewCallback.run();
         });
 
@@ -190,7 +202,7 @@ public class CombatUIManager {
         combatMenu.getChildren().addAll(mainDiceArea, buttonsBox);
     }
 
-    private void updateComboUI(Label totalLabel, Label comboLabel, Button attackBtn, ImageView[] diceViews, java.util.List<Integer> currentDiceRolls, boolean hasPlayerRolled) {
+    private void updateComboUI(Label totalLabel, Label comboLabel, Button attackBtn, ImageView[] diceViews, java.util.List<Integer> currentDiceRolls, boolean hasPlayerRolled, int bonusDamage) {
         if (!hasPlayerRolled || currentDiceRolls == null || currentDiceRolls.isEmpty()) {
             totalLabel.setText("TOTALE:\n0");
             comboLabel.setText("");
@@ -199,9 +211,10 @@ public class CombatUIManager {
             return;
         }
 
-        ComboResult result = ComboEvaluator.evaluate(currentDiceRolls);
+        ComboResult result = ComboEvaluator.evaluate(currentDiceRolls.stream().mapToInt(i -> i).toArray());
+        int finalDmg = result.totalDamage() + (bonusDamage * currentDiceRolls.size());
 
-        totalLabel.setText("TOTALE:\n" + result.totalDamage());
+        totalLabel.setText("TOTALE:\n" + finalDmg);
         comboLabel.setText(result.name());
 
         if (result.name().equals("Dado Più Alto") || result.name().equals("COPPIA")) {
@@ -213,7 +226,7 @@ public class CombatUIManager {
 
         highlightComboDice(diceViews, result);
 
-        attackBtn.setText("⚔ Attacca (" + result.totalDamage() + " Danni)");
+        attackBtn.setText("⚔ Attacca (" + finalDmg + " Danni)");
     }
 
     /** Applica un effetto glow dorato ai dadi che fanno parte della combo. */
@@ -243,9 +256,9 @@ public class CombatUIManager {
     }
 
     private void playCascadingRollAnimation(int index, java.util.List<Integer> targetValues, ImageView[] diceViews, Label[] diceLabels, Label totalLabel,
-            Label comboLabel, Button attackBtn, Runnable onComplete) {
+            Label comboLabel, Button attackBtn, int bonusDamage, Runnable onComplete) {
         if (index >= 5) {
-            updateComboUI(totalLabel, comboLabel, attackBtn, diceViews, targetValues, true);
+            updateComboUI(totalLabel, comboLabel, attackBtn, diceViews, targetValues, true, bonusDamage);
             if (onComplete != null)
                 onComplete.run();
             return;
@@ -275,7 +288,7 @@ public class CombatUIManager {
             comboLabel.setText("Calcolando...");
             comboLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 14px; -fx-font-style: italic;");
 
-            playCascadingRollAnimation(index + 1, targetValues, diceViews, diceLabels, totalLabel, comboLabel, attackBtn, onComplete);
+            playCascadingRollAnimation(index + 1, targetValues, diceViews, diceLabels, totalLabel, comboLabel, attackBtn, bonusDamage, onComplete);
         });
 
         timeline.getKeyFrames().add(finalKf);
@@ -283,7 +296,7 @@ public class CombatUIManager {
     }
 
     private void playSingleDiceRollAnimation(int index, java.util.List<Integer> targetValues, ImageView[] allDiceViews, Label diceLabel, Label totalLabel,
-            Label comboLabel, Button attackBtn, Runnable onComplete) {
+            Label comboLabel, Button attackBtn, int bonusDamage, Runnable onComplete) {
         ImageView diceView = allDiceViews[index];
         Timeline timeline = new Timeline();
         Random rand = new Random();
@@ -302,7 +315,7 @@ public class CombatUIManager {
             diceView.setImage(getDiceImage(finalValue));
             diceLabel.setText("+" + finalValue);
 
-            updateComboUI(totalLabel, comboLabel, attackBtn, allDiceViews, targetValues, true);
+            updateComboUI(totalLabel, comboLabel, attackBtn, allDiceViews, targetValues, true, bonusDamage);
 
             if (onComplete != null)
                 onComplete.run();

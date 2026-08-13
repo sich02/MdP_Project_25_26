@@ -74,5 +74,10 @@ class FloorTest {
         public void markAsCleared() {
             this.isCleared = true;
         }
+
+        @Override
+        public String getRoomType() {
+            return "NORMAL";
+        }
     }
 }

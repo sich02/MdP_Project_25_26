@@ -8,10 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Player implements StatusEffectHolder {
-    private final int maxHp; // Ora gestito a "mezzi cuori"
+    private int maxHp; // Ora gestito a "mezzi cuori", massimale di 12 (6 cuori interi)
     private int currentHp;
     private int gold;
     private int keys;
+    private int bonusDamage; // Danno bonus per ogni dado lanciato
     private final DicePool dicePool;
     private final List<StatusEffect> activeEffects;
     
@@ -25,6 +26,7 @@ public class Player implements StatusEffectHolder {
         this.currentHp = maxHp;
         this.gold = 0;
         this.keys = 0;
+        this.bonusDamage = 0;
         this.dicePool = new DicePool();
         this.activeEffects = new ArrayList<>();
         resetTurnState();
@@ -55,6 +57,12 @@ public class Player implements StatusEffectHolder {
 
     public boolean isDead() {return currentHp <= 0;}
 
+    public void increaseMaxHp(int amount) {
+        this.maxHp = Math.min(12, this.maxHp + amount);
+    }
+
+
+
     public void consumeKey() {
         if (keys > 0) {
             keys--;
@@ -68,6 +76,10 @@ public class Player implements StatusEffectHolder {
     public void spendGold(int amount) {this.gold = Math.max(0, this.gold - amount);}
 
     public void addKeys(int amount) {this.keys += amount;}
+
+    public int getBonusDamage() { return bonusDamage; }
+
+    public void addBonusDamage(int amount) { this.bonusDamage += amount; }
 
     public DicePool getDicePool() {return dicePool;}
 

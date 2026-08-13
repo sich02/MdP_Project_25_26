@@ -6,9 +6,10 @@ public class Dice {
 
     private static final int faces = 6;
     private int currentValue;
-
+    private Element element;
 
     public Dice(){
+        this.element = Element.NONE;
         this.roll();
     }
 
@@ -22,6 +23,14 @@ public class Dice {
 
     public int getCurrentValue() {
         return currentValue;
+    }
+
+    public Element getElement() {
+        return element;
+    }
+
+    public void setElement(Element element) {
+        this.element = element;
     }
 
 

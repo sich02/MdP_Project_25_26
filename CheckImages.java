@@ -1,0 +1,1 @@
+import java.io.InputStream; public class CheckImages { public static void main(String[] args) { InputStream is = CheckImages.class.getResourceAsStream("/assets/heart_full.png"); System.out.println("Stream: " + (is != null ? "FOUND" : "NULL")); } }

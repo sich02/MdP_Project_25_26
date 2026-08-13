@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Gestisce esclusivamente il rendering visivo della stanza: pavimento, porte, player e nemici.
+ * Gestisce esclusivamente il rendering visivo della stanza: pavimento, porte, player, nemici e loot.
  */
 public class RoomRenderer {
 
@@ -46,14 +46,14 @@ public class RoomRenderer {
         }
     }
 
-    public static void renderDoors(Pane roomPane, RoomDTO roomData) {
-        renderSingleDoor(roomPane, roomData.north(), Direction.NORTH);
-        renderSingleDoor(roomPane, roomData.south(), Direction.SOUTH);
-        renderSingleDoor(roomPane, roomData.east(), Direction.EAST);
-        renderSingleDoor(roomPane, roomData.west(), Direction.WEST);
+    public static void renderDoors(Pane roomPane, RoomDTO roomData, java.util.function.Consumer<Direction> onDoorClicked) {
+        renderSingleDoor(roomPane, roomData.north(), Direction.NORTH, onDoorClicked);
+        renderSingleDoor(roomPane, roomData.south(), Direction.SOUTH, onDoorClicked);
+        renderSingleDoor(roomPane, roomData.east(), Direction.EAST, onDoorClicked);
+        renderSingleDoor(roomPane, roomData.west(), Direction.WEST, onDoorClicked);
     }
 
-    private static void renderSingleDoor(Pane roomPane, DoorDTO doorInfo, Direction dir) {
+    private static void renderSingleDoor(Pane roomPane, DoorDTO doorInfo, Direction dir, java.util.function.Consumer<Direction> onDoorClicked) {
         if (!doorInfo.exists()) return;
 
         double doorSize = DOOR_SIZE;
@@ -70,6 +70,12 @@ public class RoomRenderer {
             doorSprite.setFitWidth(doorSize);
             doorSprite.setPreserveRatio(true);
             doorSprite.setSmooth(false);
+            doorSprite.setCursor(javafx.scene.Cursor.HAND);
+            doorSprite.setOnMouseClicked(e -> {
+                if (onDoorClicked != null) {
+                    onDoorClicked.accept(dir);
+                }
+            });
 
             switch (dir) {
                 case NORTH -> { doorSprite.setX(270); doorSprite.setY(-5); }
@@ -244,6 +250,50 @@ public class RoomRenderer {
         } catch (Exception e) {
             System.err.println("Errore nel rendering della botola: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    public static void renderLoot(Pane roomPane, RoomDTO roomData, Runnable onLootClicked) {
+        if (!roomData.hasLoot() || roomData.lootImagePath() == null) return;
+
+        double pedestalSize = 40;
+        double itemSize = 30;
+
+        // Piedistallo (placeholder o grafica se esiste)
+        Rectangle pedestal = new Rectangle(pedestalSize, pedestalSize / 2, Color.DARKGRAY);
+        double spawnX = (ROOM_WIDTH / 2.0) - (pedestalSize / 2.0);
+        double spawnY = (ROOM_HEIGHT / 2.0) - (pedestalSize / 2.0) + 10;
+        
+        // Offset if boss room to not overlap perfectly with trapdoor
+        if (roomData.isBossRoom()) {
+            spawnY -= 50; 
+        }
+        
+        pedestal.setX(spawnX);
+        pedestal.setY(spawnY);
+        pedestal.setArcWidth(10);
+        pedestal.setArcHeight(10);
+
+        try {
+            ImageView lootSprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream(roomData.lootImagePath())));
+            lootSprite.setFitWidth(itemSize);
+            lootSprite.setFitHeight(itemSize);
+            lootSprite.setPreserveRatio(true);
+            lootSprite.setSmooth(false);
+            lootSprite.setX((ROOM_WIDTH / 2.0) - (itemSize / 2.0));
+            lootSprite.setY(spawnY - 20); // Sopra il piedistallo
+
+            // Effetto hover
+            DropShadow hoverShadow = new DropShadow(15, Color.GOLD);
+            Group lootGroup = new Group(pedestal, lootSprite);
+            lootGroup.setCursor(Cursor.HAND);
+            lootGroup.setOnMouseEntered(e -> lootSprite.setEffect(hoverShadow));
+            lootGroup.setOnMouseExited(e -> lootSprite.setEffect(null));
+            lootGroup.setOnMouseClicked(e -> onLootClicked.run());
+
+            roomPane.getChildren().add(lootGroup);
+        } catch (Exception e) {
+            System.err.println("Errore nel rendering del loot: " + e.getMessage());
         }
     }
 }

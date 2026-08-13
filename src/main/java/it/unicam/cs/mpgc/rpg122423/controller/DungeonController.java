@@ -14,10 +14,15 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.Cursor;
+import java.util.List;
 
 public class DungeonController {
 
-    @FXML private Label hpLabel;
+    @FXML private HBox heartsBox;
     @FXML private Label goldLabel;
     @FXML private Label floorLabel;
     @FXML private Pane roomPane;
@@ -45,7 +50,7 @@ public class DungeonController {
         PlayerDTO playerStats = dungeonService.getPlayerData();
 
         if (playerStats.currentHearts() <= 0) {
-            hpLabel.setText("Cuori: 0.0 / " + playerStats.maxHearts());
+            updateHeartsUI(0, playerStats.maxHearts());
             showGameOverScreen();
             return;
         }
@@ -55,7 +60,7 @@ public class DungeonController {
         roomPane.getChildren().clear();
 
         RoomRenderer.renderFloor(roomPane);
-        RoomRenderer.renderDoors(roomPane, roomData);
+        RoomRenderer.renderDoors(roomPane, roomData, this::tryMove);
 
         if (roomData.enemies() != null && !roomData.enemies().isEmpty()) {
             if (selectedEnemyIndex < 0 || selectedEnemyIndex >= roomData.enemies().size()) {
@@ -82,9 +87,20 @@ public class DungeonController {
             });
         }
 
-        hpLabel.setText("Cuori: " + playerStats.currentHearts() + " / " + playerStats.maxHearts());
-        goldLabel.setText("Oro: " + playerStats.gold());
-        keysLabel.setText("Chiavi: " + playerStats.keys());
+        RoomRenderer.renderLoot(roomPane, roomData, () -> {
+            it.unicam.cs.mpgc.rpg122423.model.item.Item claimedItem = dungeonService.claimLootInCurrentRoom();
+            if (claimedItem != null) {
+                if (claimedItem instanceof it.unicam.cs.mpgc.rpg122423.model.item.ElementalItem elementalItem) {
+                    showElementalSelectionUI(elementalItem.getElement());
+                } else {
+                    updateView();
+                }
+            }
+        });
+
+        updateHeartsUI(playerStats.currentHearts(), playerStats.maxHearts());
+        goldLabel.setText(String.valueOf(playerStats.gold()));
+        keysLabel.setText(String.valueOf(playerStats.keys()));
         floorLabel.setText("Piano: " + dungeonService.getCurrentFloorNumber());
 
         combatUIManager.render(roomPane, roomData, dungeonService, selectedEnemyIndex, this::updateView, this::startEnemyTurnSequence);
@@ -114,10 +130,40 @@ public class DungeonController {
         roomPane.getChildren().addAll(bg, deathLabel, restartBtn);
     }
 
-    @FXML private void moveNorth(ActionEvent event) { tryMove(Direction.NORTH); }
-    @FXML private void moveSouth(ActionEvent event) { tryMove(Direction.SOUTH); }
-    @FXML private void moveEast(ActionEvent event) { tryMove(Direction.EAST); }
-    @FXML private void moveWest(ActionEvent event) { tryMove(Direction.WEST); }
+    private void updateHeartsUI(double currentHearts, double maxHearts) {
+        heartsBox.getChildren().clear();
+
+        int fullHearts = (int) currentHearts;
+        boolean hasHalfHeart = (currentHearts - fullHearts) >= 0.5;
+        int emptyHearts = (int) (maxHearts - fullHearts - (hasHalfHeart ? 1 : 0));
+
+        Image fullHeartImg = new Image(getClass().getResource("/assets/heart_full.png").toExternalForm());
+        Image halfHeartImg = new Image(getClass().getResource("/assets/heart_half.png").toExternalForm());
+        Image emptyHeartImg = new Image(getClass().getResource("/assets/heart_empty.png").toExternalForm());
+
+        for (int i = 0; i < fullHearts; i++) {
+            ImageView view = new ImageView(fullHeartImg);
+            view.setFitWidth(24);
+            view.setFitHeight(24);
+            heartsBox.getChildren().add(view);
+        }
+
+        if (hasHalfHeart) {
+            ImageView view = new ImageView(halfHeartImg);
+            view.setFitWidth(24);
+            view.setFitHeight(24);
+            heartsBox.getChildren().add(view);
+        }
+
+        for (int i = 0; i < emptyHearts; i++) {
+            ImageView view = new ImageView(emptyHeartImg);
+            view.setFitWidth(24);
+            view.setFitHeight(24);
+            heartsBox.getChildren().add(view);
+        }
+    }
+
+
 
     private void tryMove(Direction dir) {
         if (dungeonService.interactWithDirection(dir)) {
@@ -140,6 +186,10 @@ public class DungeonController {
             boolean enemyAttacked = dungeonService.executeNextEnemyTurn(dodged);
             updateView();
 
+            if (dungeonService.getPlayerData().currentHearts() <= 0) {
+                return; // Stop the sequence if the player died from this attack
+            }
+
             if (enemyAttacked) {
                 PauseTransition pause = new PauseTransition(Duration.seconds(0.5));
                 pause.setOnFinished(e -> startEnemyTurnSequence());
@@ -148,5 +198,56 @@ public class DungeonController {
                 updateView();
             }
         });
+    }
+
+    private void showElementalSelectionUI(it.unicam.cs.mpgc.rpg122423.model.dice.Element element) {
+        javafx.scene.layout.VBox overlay = new javafx.scene.layout.VBox(20);
+        overlay.setAlignment(javafx.geometry.Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 30; -fx-border-color: " + (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE ? "orange" : "white") + "; -fx-border-width: 3; -fx-background-radius: 10; -fx-border-radius: 10;");
+        
+        Label title = new Label("Scegli un dado da incantare con: " + element.name());
+        title.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        
+        javafx.scene.layout.HBox diceBox = new javafx.scene.layout.HBox(10);
+        diceBox.setAlignment(javafx.geometry.Pos.CENTER);
+        
+        List<Integer> diceValues = dungeonService.getPlayerDiceValues();
+        List<it.unicam.cs.mpgc.rpg122423.model.dice.Element> diceElements = dungeonService.getPlayerDiceElements();
+        
+        for (int i = 0; i < diceValues.size(); i++) {
+            int index = i;
+            javafx.scene.layout.StackPane diePane = new javafx.scene.layout.StackPane();
+            
+            Rectangle bg = new Rectangle(50, 50);
+            bg.setArcWidth(10);
+            bg.setArcHeight(10);
+            bg.setFill(Color.WHITE);
+            
+            if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
+                bg.setStroke(Color.ORANGERED);
+                bg.setStrokeWidth(3);
+            }
+            
+            Label valueLabel = new Label(String.valueOf(diceValues.get(i)));
+            valueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+            
+            diePane.getChildren().addAll(bg, valueLabel);
+            diePane.setCursor(Cursor.HAND);
+            
+            diePane.setOnMouseClicked(e -> {
+                dungeonService.setPlayerDiceElement(index, element);
+                updateView();
+            });
+            
+            diceBox.getChildren().add(diePane);
+        }
+        
+        overlay.getChildren().addAll(title, diceBox);
+        
+        // Posiziona al centro della stanza
+        overlay.setLayoutX(100);
+        overlay.setLayoutY(120);
+        
+        roomPane.getChildren().add(overlay);
     }
 }

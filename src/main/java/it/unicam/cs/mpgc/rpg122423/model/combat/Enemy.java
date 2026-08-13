@@ -11,4 +11,5 @@ public interface Enemy extends StatusEffectHolder {
     boolean isDead();
     EnemyAction getNextAction();
     void prepareNextAction();
+    void tickStatusEffects();
 }

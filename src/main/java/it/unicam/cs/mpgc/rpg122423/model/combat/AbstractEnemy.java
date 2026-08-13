@@ -57,6 +57,13 @@ public abstract class AbstractEnemy implements Enemy {
         activeEffects.add(effect);
     }
 
+    public void tickStatusEffects() {
+        for (StatusEffect effect : new ArrayList<>(activeEffects)) {
+            effect.tick();
+        }
+        activeEffects.removeIf(StatusEffect::isExpired);
+    }
+
     @Override
     public List<StatusEffect> getActiveEffects() {
         return List.copyOf(activeEffects);

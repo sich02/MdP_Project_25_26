@@ -5,14 +5,19 @@ import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
 
 import java.util.List;
 
+import it.unicam.cs.mpgc.rpg122423.model.item.Item;
+import it.unicam.cs.mpgc.rpg122423.model.item.ItemPool;
+
 /**
  * Stanza del Boss. Contiene un singolo boss fornito dall'esterno.
- * Dopo la sconfitta del boss, appare una botola per avanzare al piano successivo.
+ * Dopo la sconfitta del boss, appare una botola per avanzare al piano successivo e un oggetto.
  */
-public class BossRoom implements Room, Combattable {
+public class BossRoom implements Room, Combattable, Lootable {
 
     private boolean cleared = false;
     private boolean trapdoorActive = false;
+    private boolean lootAvailable = false;
+    private Item lootItem;
     private final Enemy boss;
     private TurnPhase currentPhase;
     private int currentEnemyTurnIndex;
@@ -42,20 +47,36 @@ public class BossRoom implements Room, Combattable {
     // --- Room ---
     @Override
     public boolean isCleared() {
-        if (boss.isDead()) {
+        if (boss.isDead() && !this.cleared) {
             this.cleared = true;
             this.trapdoorActive = true;
+            this.lootAvailable = true;
+            this.lootItem = ItemPool.getRandomItem();
         }
         return cleared;
     }
 
     @Override
     public void markAsCleared() {
-        this.cleared = true;
-        this.trapdoorActive = true;
+        if (!this.cleared) {
+            this.cleared = true;
+            this.trapdoorActive = true;
+            this.lootAvailable = true;
+            this.lootItem = ItemPool.getRandomItem();
+        }
     }
 
     @Override
     public String getRoomType() { return "BOSS"; }
+
+    // --- Lootable ---
+    @Override
+    public boolean hasLoot() { return lootAvailable; }
+
+    @Override
+    public Item getLoot() { return lootItem; }
+
+    @Override
+    public void claimLoot() { this.lootAvailable = false; }
 }
 

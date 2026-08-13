@@ -43,4 +43,8 @@ public class DicePool {
     public int getSize() {
         return diceList.size();
     }
+
+    public List<Dice> getDiceList() {
+        return diceList;
+    }
 }
