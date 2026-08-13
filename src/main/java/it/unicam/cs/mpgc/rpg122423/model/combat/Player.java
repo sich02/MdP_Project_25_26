@@ -38,6 +38,14 @@ public class Player implements StatusEffectHolder {
         this.rerollsLeft = 3;
     }
 
+    public void restoreState(int currentHp, int maxHp, int gold, int keys, int bonusDamage) {
+        this.currentHp = currentHp;
+        this.maxHp = maxHp;
+        this.gold = gold;
+        this.keys = keys;
+        this.bonusDamage = bonusDamage;
+    }
+
     public boolean hasRolled() { return hasRolled; }
     public void setHasRolled(boolean hasRolled) { this.hasRolled = hasRolled; }
     

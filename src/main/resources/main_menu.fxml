@@ -11,7 +11,7 @@
     <Label text="RPG PROJECT" style="-fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 0 0 40 0;"/>
 
     <Button text="Nuova Run" onAction="#handleNewRun" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
-    <Button text="Continua" onAction="#handleContinue" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+    <Button fx:id="continueButton" text="Continua" onAction="#handleContinue" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
     <Button text="Esci" onAction="#handleExit" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
 
 </VBox>

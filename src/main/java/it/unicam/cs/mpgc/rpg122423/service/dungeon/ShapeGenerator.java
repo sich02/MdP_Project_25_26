@@ -6,7 +6,11 @@ import java.util.*;
 
 public class ShapeGenerator {
 
-    private final Random random = new Random();
+    private final Random random;
+
+    public ShapeGenerator(Random random) {
+        this.random = random;
+    }
 
     public Set<Coordinate> generateShape(int floorNumber) {
         int targetRooms = calculateTotalRooms(floorNumber);

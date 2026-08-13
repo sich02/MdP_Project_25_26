@@ -26,13 +26,70 @@ public class DungeonService {
         this.generator = new FloorGenerator();
     }
 
+    public DungeonLevel getCurrentLevel() {
+        return currentLevel;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
     public void startNewRun() {
         this.currentFloorNumber = 1;
         System.out.println("Generazione procedurale del Piano " + currentFloorNumber + " in corso...");
         this.player = new Player();
         Floor floor = generator.generateFloor(currentFloorNumber);
-        this.currentLevel = new DungeonLevel(floor.getRooms(), floor.getStartingCoordinate());
+        this.currentLevel = new DungeonLevel(floor, floor.getStartingCoordinate());
         System.out.println("Piano generato e pronto all'esplorazione!");
+    }
+
+    private String loadedDirection = null;
+
+    public String getLoadedDirection() {
+        return loadedDirection;
+    }
+
+    public void restoreGame(it.unicam.cs.mpgc.rpg122423.entity.SaveGame saveGame) {
+        this.currentFloorNumber = saveGame.getCurrentFloorNumber();
+        this.player = new Player();
+        this.player.restoreState(
+                saveGame.getPlayer().getCurrentHp(),
+                saveGame.getPlayer().getMaxHp(),
+                saveGame.getPlayer().getGold(),
+                saveGame.getPlayer().getKeys(),
+                saveGame.getPlayer().getBonusDamage()
+        );
+        Floor floor = generator.generateFloorWithSeed(currentFloorNumber, saveGame.getSeed());
+        
+        // Svuota stanze completate
+        for (it.unicam.cs.mpgc.rpg122423.entity.ClearedRoomEntity cr : saveGame.getClearedRooms()) {
+            Coordinate coord = new Coordinate(cr.getX(), cr.getY());
+            java.util.Optional<it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room> room = floor.getRoomAt(coord);
+            room.ifPresent(it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room::markAsCleared);
+        }
+
+        Coordinate currentPos = new Coordinate(saveGame.getCurrentX(), saveGame.getCurrentY());
+        
+        // Restore active enemies if saved in the middle of a room
+        if (saveGame.getSavedEnemies() != null && !saveGame.getSavedEnemies().isEmpty()) {
+            java.util.Optional<it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room> currentRoom = floor.getRoomAt(currentPos);
+            if (currentRoom.isPresent() && currentRoom.get() instanceof it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Combattable combattableRoom) {
+                java.util.List<it.unicam.cs.mpgc.rpg122423.model.combat.Enemy> generatedEnemies = combattableRoom.getEnemies();
+                java.util.List<it.unicam.cs.mpgc.rpg122423.entity.SavedEnemyEntity> savedEnemies = saveGame.getSavedEnemies();
+                for (int i = 0; i < Math.min(generatedEnemies.size(), savedEnemies.size()); i++) {
+                    it.unicam.cs.mpgc.rpg122423.model.combat.Enemy enemy = generatedEnemies.get(i);
+                    it.unicam.cs.mpgc.rpg122423.entity.SavedEnemyEntity savedEnemy = savedEnemies.get(i);
+                    int damageToApply = enemy.getCurrentHp() - savedEnemy.getCurrentHp();
+                    if (damageToApply > 0) {
+                        enemy.takeDamage(damageToApply);
+                    }
+                }
+            }
+        }
+
+        this.currentLevel = new DungeonLevel(floor, currentPos);
+        this.loadedDirection = saveGame.getLastEntryDirection();
+        System.out.println("Partita caricata al Piano " + currentFloorNumber + "!");
     }
 
     /** Avanza al piano successivo. Genera un nuovo layout e resetta la posizione. */
@@ -40,8 +97,12 @@ public class DungeonService {
         currentFloorNumber++;
         System.out.println("Avanzamento al Piano " + currentFloorNumber + "...");
         Floor floor = generator.generateFloor(currentFloorNumber);
-        this.currentLevel = new DungeonLevel(floor.getRooms(), floor.getStartingCoordinate());
+        this.currentLevel = new DungeonLevel(floor, floor.getStartingCoordinate());
         System.out.println("Piano " + currentFloorNumber + " generato!");
+        
+        // Auto-save at floor change
+        it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService saveService = new it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService();
+        saveService.saveGame(this, null);
     }
 
     public int getCurrentFloorNumber() {

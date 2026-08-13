@@ -13,14 +13,36 @@ import java.io.IOException;
 public class MainMenuController {
 
     @FXML
+    private javafx.scene.control.Button continueButton;
+    
+    private final it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService saveService = new it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService();
+    private boolean hasSave = false;
+    private it.unicam.cs.mpgc.rpg122423.entity.SaveGame saveGame = null;
+
+    @FXML
+    public void initialize() {
+        java.util.Optional<it.unicam.cs.mpgc.rpg122423.entity.SaveGame> loadedSave = saveService.loadGame();
+        if (loadedSave.isPresent()) {
+            hasSave = true;
+            saveGame = loadedSave.get();
+            continueButton.setDisable(false);
+        } else {
+            continueButton.setDisable(true);
+        }
+    }
+
+    @FXML
     private void handleNewRun(ActionEvent event) {
         System.out.println("Avvio Nuova Run! Generazione dungeon...");
-        loadScene(event, "/dungeon.fxml");
+        loadScene(event, "/dungeon.fxml", false);
     }
 
     @FXML
     private void handleContinue(ActionEvent event) {
-        System.out.println("Caricamento salvataggio... (Da implementare)");
+        System.out.println("Caricamento salvataggio...");
+        if (hasSave) {
+            loadScene(event, "/dungeon.fxml", true);
+        }
     }
 
     @FXML
@@ -29,17 +51,18 @@ public class MainMenuController {
         System.exit(0);
     }
 
-    private void loadScene(ActionEvent event, String fxmlPath) {
+    private void loadScene(ActionEvent event, String fxmlPath, boolean isLoad) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             
             if (fxmlPath.equals("/dungeon.fxml")) {
                 loader.setControllerFactory(clazz -> {
                     if (clazz == DungeonController.class) {
-                        return new DungeonController(
-                            new it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService(), 
-                            new CombatUIManager()
-                        );
+                        it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService dungeonService = new it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService();
+                        if (isLoad && saveGame != null) {
+                            dungeonService.restoreGame(saveGame);
+                        }
+                        return new DungeonController(dungeonService, new CombatUIManager());
                     }
                     try {
                         return clazz.getDeclaredConstructor().newInstance();

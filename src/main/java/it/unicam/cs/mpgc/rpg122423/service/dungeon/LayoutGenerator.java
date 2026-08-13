@@ -22,10 +22,10 @@ public class LayoutGenerator {
     private final TopologicalAnalyzer topologicalAnalyzer;
     private final Random random;
 
-    public LayoutGenerator() {
-        this.shapeGenerator = new ShapeGenerator();
+    public LayoutGenerator(Random random) {
+        this.random = random;
+        this.shapeGenerator = new ShapeGenerator(random);
         this.topologicalAnalyzer = new TopologicalAnalyzer();
-        this.random = new Random();
     }
 
     public Map<Coordinate, Room> generateLayout(int floorNumber) {

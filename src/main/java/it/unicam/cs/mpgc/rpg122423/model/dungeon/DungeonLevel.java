@@ -5,12 +5,18 @@ import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
 import java.util.Map;
 
 public class DungeonLevel {
+    private final Floor floor;
     private final Map<Coordinate, Room> layout;
     private Coordinate currentPosition;
 
-    public DungeonLevel(Map<Coordinate, Room> layout, Coordinate startingPosition) {
-        this.layout = layout;
+    public DungeonLevel(Floor floor, Coordinate startingPosition) {
+        this.floor = floor;
+        this.layout = floor.getRooms();
         this.currentPosition = startingPosition;
+    }
+
+    public Floor getFloor() {
+        return floor;
     }
 
     public Room getCurrentRoom() {

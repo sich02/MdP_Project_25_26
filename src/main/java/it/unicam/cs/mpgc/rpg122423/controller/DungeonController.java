@@ -27,13 +27,17 @@ public class DungeonController {
     @FXML private Label floorLabel;
     @FXML private Pane roomPane;
     @FXML private Label keysLabel;
+    @FXML private javafx.scene.layout.StackPane rootPane;
+    @FXML private javafx.scene.layout.VBox pauseMenuOverlay;
 
     private final DungeonService dungeonService;
     private final CombatUIManager combatUIManager;
+    private final it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService saveService;
 
     public DungeonController(DungeonService dungeonService, CombatUIManager combatUIManager) {
         this.dungeonService = dungeonService;
         this.combatUIManager = combatUIManager;
+        this.saveService = new it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService();
     }
 
     private Direction lastEntryDirection = null;
@@ -42,8 +46,59 @@ public class DungeonController {
     @FXML
     public void initialize() {
         System.out.println("Dungeon UI caricata. Avvio Service...");
-        dungeonService.startNewRun();
+        
+        // Se c'è un salvataggio da ricaricare o no viene gestito prima. 
+        // Qui per ora facciamo startNewRun se il currentLevel è null
+        if (dungeonService.getCurrentLevel() == null) {
+            dungeonService.startNewRun();
+        } else {
+            String loadedDir = dungeonService.getLoadedDirection();
+            if (loadedDir != null) {
+                try {
+                    this.lastEntryDirection = Direction.valueOf(loadedDir);
+                } catch (IllegalArgumentException e) {
+                    this.lastEntryDirection = null;
+                }
+            }
+        }
         updateView();
+
+        javafx.application.Platform.runLater(() -> {
+            if (rootPane != null && rootPane.getScene() != null) {
+                rootPane.getScene().setOnKeyPressed(event -> {
+                    if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                        togglePauseMenu();
+                    }
+                });
+            }
+        });
+    }
+
+    private void togglePauseMenu() {
+        if (pauseMenuOverlay != null) {
+            pauseMenuOverlay.setVisible(!pauseMenuOverlay.isVisible());
+        }
+    }
+
+    @FXML
+    public void handleContinue(ActionEvent event) {
+        togglePauseMenu();
+    }
+
+    @FXML
+    public void handleSaveAndQuit(ActionEvent event) {
+        saveService.saveGame(dungeonService, lastEntryDirection != null ? lastEntryDirection.name() : null);
+        // Torna al menu principale
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/main_menu.fxml"));
+            javafx.scene.Parent root = loader.load();
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1024, 768);
+            javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void updateView() {

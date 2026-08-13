@@ -37,6 +37,8 @@ public abstract class AbstractEnemy implements Enemy {
     @Override
     public int getMaxHp() { return maxHp; }
 
+    public int getBaseDamage() { return baseDamage; }
+
     @Override
     public void takeDamage(int damage) {
         this.currentHp = Math.max(0, this.currentHp - damage);

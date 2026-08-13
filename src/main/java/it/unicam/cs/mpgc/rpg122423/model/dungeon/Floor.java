@@ -9,8 +9,9 @@ public class Floor {
     private final int floorNumber;
     private final Map<Coordinate, Room> rooms;
     private boolean cleared;
+    private final long seed;
 
-    public Floor(int floorNumber, Map<Coordinate, Room> rooms) {
+    public Floor(int floorNumber, Map<Coordinate, Room> rooms, long seed) {
         if (floorNumber <= 0) {
             throw new IllegalArgumentException("Il numero del piano deve essere maggiore di 0");
         }
@@ -18,6 +19,7 @@ public class Floor {
         this.floorNumber = floorNumber;
         this.rooms = rooms;
         this.cleared = false;
+        this.seed = seed;
         this.rooms.put(new Coordinate(0, 0), new SpawnRoom());
     }
 
@@ -30,6 +32,7 @@ public class Floor {
     public boolean isCleared() {return cleared;}
     public void markAsCleared() {this.cleared = true;}
     public Map<Coordinate, Room> getRooms() {return java.util.Collections.unmodifiableMap(rooms);}
+    public long getSeed() {return seed;}
 
 
 }
