@@ -14,7 +14,7 @@ class LayoutGeneratorTest {
 
     @Test
     void testGenerateShapeSize() {
-        ShapeGenerator generator = new ShapeGenerator();
+        ShapeGenerator generator = new ShapeGenerator(new java.util.Random());
         int floorNumber = 1;
 
         Set<Coordinate> layout = generator.generateShape(floorNumber);

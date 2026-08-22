@@ -2,12 +2,12 @@ package it.unicam.cs.mpgc.rpg122423.model.status;
 
 import it.unicam.cs.mpgc.rpg122423.model.combat.Enemy;
 
-public class BurnEffect implements StatusEffect {
+public class PoisonEffect implements StatusEffect {
     private int remainingTurns;
     private final int damagePerTurn;
     private final Enemy target;
 
-    public BurnEffect(Enemy target, int damagePerTurn) {
+    public PoisonEffect(Enemy target, int damagePerTurn) {
         this.target = target;
         this.damagePerTurn = damagePerTurn;
         this.remainingTurns = 3;
@@ -15,7 +15,7 @@ public class BurnEffect implements StatusEffect {
 
     @Override
     public String getName() {
-        return "Bruciatura";
+        return "Avvelenamento";
     }
 
     @Override
@@ -28,7 +28,7 @@ public class BurnEffect implements StatusEffect {
         if (!isExpired()) {
             target.takeDamage(damagePerTurn);
             remainingTurns--;
-            System.out.println("🔥 Burn tick! " + target.getName() + " subisce " + damagePerTurn + " danni. (Turni rimanenti: " + remainingTurns + ")");
+            System.out.println("☠️ Poison tick! " + target.getName() + " subisce " + damagePerTurn + " danni. (Turni rimanenti: " + remainingTurns + ")");
         }
     }
 

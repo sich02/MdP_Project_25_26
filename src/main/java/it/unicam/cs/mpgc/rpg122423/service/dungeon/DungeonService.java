@@ -133,14 +133,18 @@ public class DungeonService {
             }
         }
 
-        if (currentRoom instanceof Combattable combattable) {
+        if (currentRoom instanceof Combattable combattable && !isRoomCleared) {
             for (Enemy enemy : combattable.getEnemies()) {
                 if (!enemy.isDead()) {
+                    boolean burned = enemy.getActiveEffects().stream().anyMatch(e -> e instanceof it.unicam.cs.mpgc.rpg122423.model.status.BurnEffect);
+                    boolean poisoned = enemy.getActiveEffects().stream().anyMatch(e -> e instanceof it.unicam.cs.mpgc.rpg122423.model.status.PoisonEffect);
                     enemyDTOs.add(new EnemyDTO(
                             enemy.getName(),
                             enemy.getCurrentHp(),
                             enemy.getMaxHp(),
-                            enemy.getNextAction().description()
+                            enemy.getNextAction() != null ? "Intento: " + enemy.getNextAction().damage() + " Danni" : "Intento: Sconosciuto",
+                            burned,
+                            poisoned
                     ));
                 }
             }
@@ -306,13 +310,36 @@ public class DungeonService {
                 Enemy target = aliveEnemies.get(targetIndex);
                 target.takeDamage(damage);
 
-                // Applica effetti elementali (es. Fuoco al 35% di probabilità per ogni dado)
+                // Applica effetti elementali (Fuoco/Veleno/Elettro)
+                int electricProcs = 0;
                 for (it.unicam.cs.mpgc.rpg122423.model.dice.Dice d : player.getDicePool().getDiceList()) {
                     if (d.getElement() == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
                         if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < 0.35) {
                             target.addStatusEffect(new it.unicam.cs.mpgc.rpg122423.model.status.BurnEffect(target, d.getCurrentValue()));
                             System.out.println("🔥 " + target.getName() + " è stato bruciato! (Danno: " + d.getCurrentValue() + ")");
                         }
+                    } else if (d.getElement() == it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON) {
+                        if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < 0.35) {
+                            target.addStatusEffect(new it.unicam.cs.mpgc.rpg122423.model.status.PoisonEffect(target, d.getCurrentValue()));
+                            System.out.println("☠️ " + target.getName() + " è stato avvelenato! (Danno: " + d.getCurrentValue() + ")");
+                        }
+                    } else if (d.getElement() == it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC) {
+                        if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < 0.35) {
+                            electricProcs++;
+                        }
+                    }
+                }
+
+                // Ogni proc elettrico colpisce 1 mob adiacente diverso (no boss room)
+                if (electricProcs > 0 && aliveEnemies.size() > 1) {
+                    int chainDamage = Math.max(1, (int) (damage * 0.5));
+                    java.util.List<Enemy> closest = new java.util.ArrayList<>(aliveEnemies);
+                    closest.remove(target);
+                    closest.sort(java.util.Comparator.comparingInt(e -> Math.abs(aliveEnemies.indexOf(e) - targetIndex)));
+                    int chainTargets = Math.min(electricProcs, closest.size());
+                    for (int j = 0; j < chainTargets; j++) {
+                        closest.get(j).takeDamage(chainDamage);
+                        System.out.println("⚡ Elettricità a catena! " + closest.get(j).getName() + " subisce " + chainDamage + " danni.");
                     }
                 }
 

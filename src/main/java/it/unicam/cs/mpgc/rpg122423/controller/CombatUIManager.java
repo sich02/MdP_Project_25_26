@@ -105,12 +105,26 @@ public class CombatUIManager {
             diceSprite.setSmooth(false);
             diceSprite.setImage(getDiceImage(currentDiceRolls.get(i)));
             
-            if (diceElements != null && i < diceElements.size() && diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
-                javafx.scene.effect.DropShadow fireGlow = new javafx.scene.effect.DropShadow();
-                fireGlow.setColor(Color.ORANGERED);
-                fireGlow.setRadius(10);
-                fireGlow.setSpread(0.6);
-                diceSprite.setEffect(fireGlow);
+            if (diceElements != null && i < diceElements.size()) {
+                if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
+                    javafx.scene.effect.DropShadow fireGlow = new javafx.scene.effect.DropShadow();
+                    fireGlow.setColor(Color.ORANGERED);
+                    fireGlow.setRadius(10);
+                    fireGlow.setSpread(0.6);
+                    diceSprite.setEffect(fireGlow);
+                } else if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON) {
+                    javafx.scene.effect.DropShadow poisonGlow = new javafx.scene.effect.DropShadow();
+                    poisonGlow.setColor(Color.LIMEGREEN);
+                    poisonGlow.setRadius(10);
+                    poisonGlow.setSpread(0.6);
+                    diceSprite.setEffect(poisonGlow);
+                } else if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC) {
+                    javafx.scene.effect.DropShadow electricGlow = new javafx.scene.effect.DropShadow();
+                    electricGlow.setColor(Color.CYAN);
+                    electricGlow.setRadius(10);
+                    electricGlow.setSpread(0.6);
+                    diceSprite.setEffect(electricGlow);
+                }
             }
             
             diceViews[i] = diceSprite;

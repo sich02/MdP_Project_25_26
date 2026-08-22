@@ -258,7 +258,13 @@ public class DungeonController {
     private void showElementalSelectionUI(it.unicam.cs.mpgc.rpg122423.model.dice.Element element) {
         javafx.scene.layout.VBox overlay = new javafx.scene.layout.VBox(20);
         overlay.setAlignment(javafx.geometry.Pos.CENTER);
-        overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 30; -fx-border-color: " + (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE ? "orange" : "white") + "; -fx-border-width: 3; -fx-background-radius: 10; -fx-border-radius: 10;");
+        
+        String borderColor = "white";
+        if (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) borderColor = "orange";
+        else if (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON) borderColor = "limegreen";
+        else if (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC) borderColor = "cyan";
+        
+        overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 30; -fx-border-color: " + borderColor + "; -fx-border-width: 3; -fx-background-radius: 10; -fx-border-radius: 10;");
         
         Label title = new Label("Scegli un dado da incantare con: " + element.name());
         title.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
@@ -280,6 +286,12 @@ public class DungeonController {
             
             if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
                 bg.setStroke(Color.ORANGERED);
+                bg.setStrokeWidth(3);
+            } else if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON) {
+                bg.setStroke(Color.LIMEGREEN);
+                bg.setStrokeWidth(3);
+            } else if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC) {
+                bg.setStroke(Color.CYAN);
                 bg.setStrokeWidth(3);
             }
             

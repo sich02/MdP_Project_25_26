@@ -25,11 +25,27 @@ public class ItemPool {
             new ElementalItem("Red Candle", "/assets/items/fuoco/Collectible_Red_Candle_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE)
     );
 
+    private static final List<Item> POISON_ITEMS = List.of(
+            new ElementalItem("Ipecac", "/assets/items/veleno/Collectible_Ipecac_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON),
+            new ElementalItem("Serpent's Kiss", "/assets/items/veleno/Collectible_Serpent27s_Kiss_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON),
+            new ElementalItem("The Common Cold", "/assets/items/veleno/Collectible_The_Common_Cold_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON),
+            new ElementalItem("Toxic Shock", "/assets/items/veleno/Collectible_Toxic_Shock_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON)
+    );
+
+    private static final List<Item> ELECTRIC_ITEMS = List.of(
+            new ElementalItem("Jacob's Ladder", "/assets/items/electric/Collectible_Jacob 27s_Ladder_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC),
+            new ElementalItem("Technology", "/assets/items/electric/Collectible_Technology_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC),
+            new ElementalItem("Technology Zero", "/assets/items/electric/Collectible_Technology_Zero_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC),
+            new ElementalItem("The Ludovico Technique", "/assets/items/electric/Collectible_The_Ludovico_Technique_icon.png", it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC)
+    );
+
     private static final List<Item> ALL_ITEMS = new java.util.ArrayList<>();
     static {
         ALL_ITEMS.addAll(HP_ITEMS);
         ALL_ITEMS.addAll(DMG_ITEMS);
         ALL_ITEMS.addAll(FIRE_ITEMS);
+        ALL_ITEMS.addAll(POISON_ITEMS);
+        ALL_ITEMS.addAll(ELECTRIC_ITEMS);
     }
 
     private static final Random RANDOM = new Random();

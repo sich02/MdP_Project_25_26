@@ -196,9 +196,16 @@ public class RoomRenderer {
                     glow.setSpread(0.6);
                     glow.setRadius(15);
                     enemySprite.setEffect(glow);
+                } else if (enemy.isPoisoned()) {
+                    DropShadow glow = new DropShadow();
+                    glow.setColor(Color.LIMEGREEN);
+                    glow.setSpread(0.6);
+                    glow.setRadius(15);
+                    enemySprite.setEffect(glow);
                 }
 
-                Label hpText = new Label("HP: " + enemy.currentHp() + "/" + enemy.maxHp());
+                String statusText = (enemy.isBurned() ? " 🔥" : "") + (enemy.isPoisoned() ? " ☠️" : "");
+                Label hpText = new Label("HP: " + enemy.currentHp() + "/" + enemy.maxHp() + statusText);
                 hpText.setStyle("-fx-text-fill: #ff4c4c; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
                 hpText.setLayoutX(positions[i][0] - 5);
                 hpText.setLayoutY(positions[i][1] - 15);

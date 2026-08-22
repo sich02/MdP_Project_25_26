@@ -4,5 +4,7 @@ public record EnemyDTO(
         String name,
         int currentHp,
         int maxHp,
-        String intentDescription
+        String intentDescription,
+        boolean isBurned,
+        boolean isPoisoned
 ) {}

@@ -19,7 +19,7 @@ class FloorTest {
         Coordinate testCoord = new Coordinate(1, 0);
         Room dummyRoom = new DummyRoom(true);
         layout.put(testCoord, dummyRoom);
-        Floor floor = new Floor(1, layout);
+        Floor floor = new Floor(1, layout, 12345L);
         Optional<Room> retrievedRoom = floor.getRoomAt(testCoord);
 
         assertTrue(retrievedRoom.isPresent(), "La stanza dovrebbe essere presente alle coordinate " + testCoord);
@@ -29,7 +29,7 @@ class FloorTest {
     @Test
     void testGetRoomAtReturnsEmptyOptionalForInvalidCoordinate() {
         Map<Coordinate, Room> layout = new HashMap<>();
-        Floor floor = new Floor(1, layout);
+        Floor floor = new Floor(1, layout, 12345L);
         Optional<Room> emptyResult = floor.getRoomAt(new Coordinate(99, 99));
 
         assertTrue(emptyResult.isEmpty(), "Richiedere coordinate vuote deve restituire un Optional.empty()");
@@ -38,7 +38,7 @@ class FloorTest {
     @Test
     void testFloorIsClearedOnlyWhenMarked() {
         Map<Coordinate, Room> layout = new HashMap<>();
-        Floor floor = new Floor(1, layout);
+        Floor floor = new Floor(1, layout, 12345L);
 
         assertFalse(floor.isCleared(), "Appena creato, il piano non deve risultare completato");
 
@@ -50,7 +50,7 @@ class FloorTest {
     @Test
     void testConstructorForcesSpawnRoomAtOrigin() {
         Map<Coordinate, Room> layout = new HashMap<>();
-        Floor floor = new Floor(1, layout);
+        Floor floor = new Floor(1, layout, 12345L);
 
         Optional<Room> spawnResult = floor.getRoomAt(new Coordinate(0, 0));
 
