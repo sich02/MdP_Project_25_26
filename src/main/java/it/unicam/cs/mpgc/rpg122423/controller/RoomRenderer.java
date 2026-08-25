@@ -307,4 +307,56 @@ public class RoomRenderer {
             System.err.println("Errore nel rendering del loot: " + e.getMessage());
         }
     }
+
+    public static void renderShopItems(Pane roomPane, RoomDTO roomData, Consumer<Integer> onBuyClicked) {
+        if (roomData.shopItems() == null || roomData.shopItems().isEmpty()) return;
+
+        double pedestalSize = 40;
+        double itemSize = 30;
+
+        int numItems = roomData.shopItems().size();
+        // Centers the group of items horizontally
+        double startX = (ROOM_WIDTH / 2.0) - (numItems * 100.0) / 2.0 + 30;
+        double spawnY = (ROOM_HEIGHT / 2.0) - (pedestalSize / 2.0);
+
+        for (int i = 0; i < numItems; i++) {
+            it.unicam.cs.mpgc.rpg122423.dto.ShopItemDTO shopItem = roomData.shopItems().get(i);
+            double currentX = startX + i * 100;
+
+            Rectangle pedestal = new Rectangle(pedestalSize, pedestalSize / 2, Color.DARKGRAY);
+            pedestal.setX(currentX);
+            pedestal.setY(spawnY + 10);
+            pedestal.setArcWidth(10);
+            pedestal.setArcHeight(10);
+
+            try {
+                ImageView itemSprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream(shopItem.imagePath())));
+                itemSprite.setFitWidth(itemSize);
+                itemSprite.setFitHeight(itemSize);
+                itemSprite.setPreserveRatio(true);
+                itemSprite.setSmooth(false);
+                itemSprite.setX(currentX + (pedestalSize / 2.0) - (itemSize / 2.0));
+                itemSprite.setY(spawnY - 10);
+
+                Label priceLabel = new Label(shopItem.price() + "¢");
+                priceLabel.setStyle("-fx-text-fill: gold; -fx-font-weight: bold; -fx-font-size: 14px; -fx-background-color: rgba(0,0,0,0.6); -fx-padding: 2px;");
+                priceLabel.setLayoutX(currentX + 5);
+                priceLabel.setLayoutY(spawnY + 30);
+
+                Group lootGroup = new Group(pedestal, itemSprite, priceLabel);
+                lootGroup.setCursor(Cursor.HAND);
+                
+                DropShadow hoverShadow = new DropShadow(15, Color.GOLD);
+                lootGroup.setOnMouseEntered(e -> itemSprite.setEffect(hoverShadow));
+                lootGroup.setOnMouseExited(e -> itemSprite.setEffect(null));
+                
+                final int index = shopItem.index();
+                lootGroup.setOnMouseClicked(e -> onBuyClicked.accept(index));
+
+                roomPane.getChildren().add(lootGroup);
+            } catch (Exception e) {
+                System.err.println("Errore nel rendering shop item: " + e.getMessage());
+            }
+        }
+    }
 }

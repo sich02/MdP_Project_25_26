@@ -69,13 +69,40 @@ public class DungeonService {
                 saveGame.getPlayer().getKeys(),
                 saveGame.getPlayer().getBonusDamage()
         );
+        
+        // Restore dice elements
+        String savedElements = saveGame.getPlayer().getDiceElements();
+        if (savedElements != null && !savedElements.isEmpty()) {
+            String[] elements = savedElements.split(",");
+            java.util.List<it.unicam.cs.mpgc.rpg122423.model.dice.Dice> diceList = this.player.getDicePool().getDiceList();
+            for (int i = 0; i < Math.min(elements.length, diceList.size()); i++) {
+                try {
+                    diceList.get(i).setElement(it.unicam.cs.mpgc.rpg122423.model.dice.Element.valueOf(elements[i]));
+                } catch (IllegalArgumentException e) {
+                    // Ignore unknown elements
+                }
+            }
+        }
+        
         Floor floor = generator.generateFloorWithSeed(currentFloorNumber, saveGame.getSeed());
         
         // Svuota stanze completate
         for (it.unicam.cs.mpgc.rpg122423.entity.ClearedRoomEntity cr : saveGame.getClearedRooms()) {
             Coordinate coord = new Coordinate(cr.getX(), cr.getY());
             java.util.Optional<it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room> room = floor.getRoomAt(coord);
-            room.ifPresent(it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room::markAsCleared);
+            room.ifPresent(r -> {
+                r.markAsCleared();
+                if (cr.isLootClaimed() && r instanceof it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Lootable lootable) {
+                    lootable.claimLoot();
+                }
+                if (cr.getShopBoughtData() != null && r instanceof it.unicam.cs.mpgc.rpg122423.model.dungeon.room.ShopRoom shopRoom) {
+                    String[] boughtFlags = cr.getShopBoughtData().split(",");
+                    java.util.List<it.unicam.cs.mpgc.rpg122423.model.dungeon.room.ShopRoom.Purchasable> items = shopRoom.getItemsForSale();
+                    for (int i = 0; i < Math.min(boughtFlags.length, items.size()); i++) {
+                        items.get(i).isBought = Boolean.parseBoolean(boughtFlags[i]);
+                    }
+                }
+            });
         }
 
         Coordinate currentPos = new Coordinate(saveGame.getCurrentX(), saveGame.getCurrentY());
@@ -167,6 +194,22 @@ public class DungeonService {
             trapdoorActive = br.isTrapdoorActive();
         }
 
+        List<ShopItemDTO> shopItemDTOs = new ArrayList<>();
+        if (currentRoom instanceof ShopRoom shopRoom) {
+            List<ShopRoom.Purchasable> items = shopRoom.getItemsForSale();
+            for (int i = 0; i < items.size(); i++) {
+                ShopRoom.Purchasable purchasable = items.get(i);
+                if (!purchasable.isBought) {
+                    shopItemDTOs.add(new ShopItemDTO(
+                            i,
+                            purchasable.item.getName(),
+                            purchasable.item.getImagePath(),
+                            purchasable.price
+                    ));
+                }
+            }
+        }
+
         return new RoomDTO(
                 inspectDoor(currentPos, Direction.NORTH),
                 inspectDoor(currentPos, Direction.SOUTH),
@@ -178,7 +221,8 @@ public class DungeonService {
                 trapdoorActive,
                 hasLoot,
                 lootImagePath,
-                lootName
+                lootName,
+                shopItemDTOs
         );
     }
 
@@ -247,6 +291,26 @@ public class DungeonService {
             return loot;
         }
         return null;
+    }
+
+    public boolean buyShopItem(int index) {
+        Room currentRoom = currentLevel.getCurrentRoom();
+        if (currentRoom instanceof ShopRoom shopRoom) {
+            List<ShopRoom.Purchasable> items = shopRoom.getItemsForSale();
+            if (index >= 0 && index < items.size()) {
+                ShopRoom.Purchasable purchasable = items.get(index);
+                if (!purchasable.isBought && player.getGold() >= purchasable.price) {
+                    player.spendGold(purchasable.price);
+                    purchasable.item.onPickup(player);
+                    purchasable.isBought = true;
+                    System.out.println("Hai acquistato: " + purchasable.item.getName());
+                    return true;
+                } else if (player.getGold() < purchasable.price) {
+                    System.out.println("Non hai abbastanza monete per acquistare: " + purchasable.item.getName());
+                }
+            }
+        }
+        return false;
     }
 
     public PlayerDTO getPlayerData() {

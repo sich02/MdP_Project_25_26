@@ -50,4 +50,10 @@ public class PlayerEntity {
 
     public String getCharacterType() { return characterType; }
     public void setCharacterType(String characterType) { this.characterType = characterType; }
+
+    @Column(nullable = true)
+    private String diceElements;
+
+    public String getDiceElements() { return diceElements; }
+    public void setDiceElements(String diceElements) { this.diceElements = diceElements; }
 }

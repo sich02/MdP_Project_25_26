@@ -13,5 +13,6 @@ public record RoomDTO(
         boolean trapdoorActive,
         boolean hasLoot,
         String lootImagePath,
-        String lootName
+        String lootName,
+        List<ShopItemDTO> shopItems
 ) {}

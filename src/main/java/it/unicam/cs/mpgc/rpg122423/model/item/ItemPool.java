@@ -53,4 +53,8 @@ public class ItemPool {
     public static Item getRandomItem() {
         return ALL_ITEMS.get(RANDOM.nextInt(ALL_ITEMS.size()));
     }
+
+    public static Item getRandomHpItem() {
+        return HP_ITEMS.get(RANDOM.nextInt(HP_ITEMS.size()));
+    }
 }

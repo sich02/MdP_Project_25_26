@@ -42,13 +42,29 @@ public class SaveService {
             playerEntity.setBonusDamage(player.getBonusDamage());
             playerEntity.setCharacterType(player.getCharacterType().name());
             
+            // Save dice elements
+            String diceElementsStr = player.getDicePool().getDiceList().stream()
+                    .map(d -> d.getElement().name())
+                    .collect(java.util.stream.Collectors.joining(","));
+            playerEntity.setDiceElements(diceElementsStr);
             
             saveGame.setPlayer(playerEntity);
 
             // Salviamo le stanze pulite
             for (Map.Entry<Coordinate, Room> entry : dungeonService.getCurrentLevel().getFloor().getRooms().entrySet()) {
-                if (entry.getValue().isCleared()) {
-                    saveGame.addClearedRoom(new ClearedRoomEntity(entry.getKey().x(), entry.getKey().y()));
+                Room r = entry.getValue();
+                if (r.isCleared()) {
+                    boolean claimed = false;
+                    String shopData = null;
+                    if (r instanceof it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Lootable lootable) {
+                        claimed = !lootable.hasLoot();
+                    }
+                    if (r instanceof it.unicam.cs.mpgc.rpg122423.model.dungeon.room.ShopRoom shopRoom) {
+                        shopData = shopRoom.getItemsForSale().stream()
+                                .map(p -> String.valueOf(p.isBought))
+                                .collect(java.util.stream.Collectors.joining(","));
+                    }
+                    saveGame.addClearedRoom(new ClearedRoomEntity(entry.getKey().x(), entry.getKey().y(), claimed, shopData));
                 }
             }
 

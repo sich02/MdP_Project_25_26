@@ -160,6 +160,12 @@ public class DungeonController {
             }
         });
 
+        RoomRenderer.renderShopItems(roomPane, roomData, index -> {
+            if (dungeonService.buyShopItem(index)) {
+                updateView();
+            }
+        });
+
         updateHeartsUI(playerStats.currentHearts(), playerStats.maxHearts());
         goldLabel.setText(String.valueOf(playerStats.gold()));
         keysLabel.setText(String.valueOf(playerStats.keys()));

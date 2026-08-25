@@ -62,17 +62,26 @@ public class LayoutGenerator {
         }
 
         for (Coordinate coord : shape) {
-            boolean generatesLoot = random.nextBoolean();
+            // Probabilità di drop del 75%
+            boolean generatesLoot = random.nextInt(100) < 75;
             it.unicam.cs.mpgc.rpg122423.model.item.Item lootItem = null;
             if (generatesLoot) {
-                int roll = random.nextInt(5);
-                lootItem = switch (roll) {
-                    case 0 -> new it.unicam.cs.mpgc.rpg122423.model.item.CoinItem();
-                    case 1 -> new it.unicam.cs.mpgc.rpg122423.model.item.KeyItem();
-                    case 2 -> new it.unicam.cs.mpgc.rpg122423.model.item.HalfHeartItem();
-                    case 3 -> new it.unicam.cs.mpgc.rpg122423.model.item.RedHeartItem();
-                    default -> new it.unicam.cs.mpgc.rpg122423.model.item.DoubleHeartItem();
-                };
+                int roll = random.nextInt(100);
+                if (roll < 50) {
+                    // 50% di probabilità di droppare una moneta
+                    lootItem = new it.unicam.cs.mpgc.rpg122423.model.item.CoinItem();
+                } else if (roll < 75) {
+                    // 25% di probabilità di droppare una chiave
+                    lootItem = new it.unicam.cs.mpgc.rpg122423.model.item.KeyItem();
+                } else {
+                    // 25% di probabilità di droppare un cuore
+                    int heartRoll = random.nextInt(3);
+                    lootItem = switch (heartRoll) {
+                        case 0 -> new it.unicam.cs.mpgc.rpg122423.model.item.HalfHeartItem();
+                        case 1 -> new it.unicam.cs.mpgc.rpg122423.model.item.RedHeartItem();
+                        default -> new it.unicam.cs.mpgc.rpg122423.model.item.DoubleHeartItem();
+                    };
+                }
             }
             layout.putIfAbsent(coord, new CombatRoom(generatesLoot, createEnemies(floorNumber), lootItem));
         }
@@ -80,11 +89,9 @@ public class LayoutGenerator {
         return layout;
     }
 
-    /**
-     * Crea una lista di 1-5 nemici standard dalla pool del piano corrente.
-     */
     private List<Enemy> createEnemies(int floorNumber) {
-        int enemyCount = random.nextInt(5) + 1;
+        int maxEnemies = (floorNumber == 1) ? 3 : 5;
+        int enemyCount = random.nextInt(maxEnemies) + 1;
         List<Enemy> result = new ArrayList<>();
         for (int i = 0; i < enemyCount; i++) {
             result.add(pickRandomEnemy(floorNumber));
