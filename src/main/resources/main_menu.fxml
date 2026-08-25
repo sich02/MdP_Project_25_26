@@ -2,16 +2,54 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.geometry.Insets?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="it.unicam.cs.mpgc.rpg122423.controller.MainMenuController"
-      spacing="20" alignment="CENTER" style="-fx-background-color: #2b2b2b;">
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="it.unicam.cs.mpgc.rpg122423.controller.MainMenuController">
+    
+    <VBox spacing="20" alignment="CENTER" style="-fx-background-color: #2b2b2b;">
+        <Label text="RPG PROJECT" style="-fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 0 0 40 0;"/>
+        <Button text="Nuova Run" onAction="#handleNewRun" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+        <Button fx:id="continueButton" text="Continua" onAction="#handleContinue" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+        <Button text="Esci" onAction="#handleExit" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
+    </VBox>
 
-    <Label text="RPG PROJECT" style="-fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 0 0 40 0;"/>
+    <VBox fx:id="characterSelectionOverlay" visible="false" alignment="CENTER" spacing="20" style="-fx-background-color: #2b2b2b;">
+        <Label text="Scegli il tuo Eroe" style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+        <HBox spacing="30" alignment="CENTER">
+            <!-- Cavaliere -->
+            <VBox alignment="CENTER" spacing="10" style="-fx-padding: 20; -fx-border-color: #555; -fx-border-width: 2; -fx-background-color: #333;">
+                <ImageView fitWidth="64" fitHeight="64" preserveRatio="true">
+                    <Image url="/assets/Player.png"/>
+                </ImageView>
+                <Label text="Cavaliere" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;"/>
+                <Label text="HP: 3 Cuori&#10;Danni: Base&#10;Reroll: 3" style="-fx-text-fill: lightgray; -fx-font-size: 12px;" textAlignment="CENTER"/>
+                <Button text="Seleziona" onAction="#selectKnight" style="-fx-base: #555; -fx-text-fill: white;"/>
+            </VBox>
+            
+            <!-- Ladro -->
+            <VBox alignment="CENTER" spacing="10" style="-fx-padding: 20; -fx-border-color: #555; -fx-border-width: 2; -fx-background-color: #333;">
+                <ImageView fitWidth="32" fitHeight="32" preserveRatio="true">
+                    <Image url="/assets/DexPlayer.png"/>
+                </ImageView>
+                <Label text="Ladro" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;"/>
+                <Label text="HP: 2 Cuori&#10;Danni: Base&#10;Reroll: 5" style="-fx-text-fill: lightgray; -fx-font-size: 12px;" textAlignment="CENTER"/>
+                <Button text="Seleziona" onAction="#selectRogue" style="-fx-base: #555; -fx-text-fill: white;"/>
+            </VBox>
 
-    <Button text="Nuova Run" onAction="#handleNewRun" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
-    <Button fx:id="continueButton" text="Continua" onAction="#handleContinue" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
-    <Button text="Esci" onAction="#handleExit" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
-
-</VBox>
+            <!-- Mago -->
+            <VBox alignment="CENTER" spacing="10" style="-fx-padding: 20; -fx-border-color: #555; -fx-border-width: 2; -fx-background-color: #333;">
+                <ImageView fitWidth="32" fitHeight="32" preserveRatio="true">
+                    <Image url="/assets/IntPlayer.png"/>
+                </ImageView>
+                <Label text="Mago" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;"/>
+                <Label text="HP: 2 Cuori&#10;Danni: +2&#10;Reroll: 1" style="-fx-text-fill: lightgray; -fx-font-size: 12px;" textAlignment="CENTER"/>
+                <Button text="Seleziona" onAction="#selectMage" style="-fx-base: #555; -fx-text-fill: white;"/>
+            </VBox>
+        </HBox>
+        <Button text="Indietro" onAction="#closeCharacterSelection" style="-fx-base: #772222; -fx-text-fill: white; -fx-font-size: 14px;"/>
+    </VBox>
+</StackPane>

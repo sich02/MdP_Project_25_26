@@ -34,10 +34,10 @@ public class DungeonService {
         return player;
     }
 
-    public void startNewRun() {
+    public void startNewRun(it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter character) {
         this.currentFloorNumber = 1;
         System.out.println("Generazione procedurale del Piano " + currentFloorNumber + " in corso...");
-        this.player = new Player();
+        this.player = new Player(character);
         Floor floor = generator.generateFloor(currentFloorNumber);
         this.currentLevel = new DungeonLevel(floor, floor.getStartingCoordinate());
         System.out.println("Piano generato e pronto all'esplorazione!");
@@ -51,7 +51,17 @@ public class DungeonService {
 
     public void restoreGame(it.unicam.cs.mpgc.rpg122423.entity.SaveGame saveGame) {
         this.currentFloorNumber = saveGame.getCurrentFloorNumber();
-        this.player = new Player();
+        
+        it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter characterType = it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.KNIGHT;
+        if (saveGame.getPlayer().getCharacterType() != null) {
+            try {
+                characterType = it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.valueOf(saveGame.getPlayer().getCharacterType());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Tipo personaggio sconosciuto, default a Cavaliere.");
+            }
+        }
+        
+        this.player = new Player(characterType);
         this.player.restoreState(
                 saveGame.getPlayer().getCurrentHp(),
                 saveGame.getPlayer().getMaxHp(),

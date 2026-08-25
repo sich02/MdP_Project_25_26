@@ -33,10 +33,12 @@ public class DungeonController {
     private final DungeonService dungeonService;
     private final CombatUIManager combatUIManager;
     private final it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService saveService;
+    private final it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter startingCharacter;
 
-    public DungeonController(DungeonService dungeonService, CombatUIManager combatUIManager) {
+    public DungeonController(DungeonService dungeonService, CombatUIManager combatUIManager, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter startingCharacter) {
         this.dungeonService = dungeonService;
         this.combatUIManager = combatUIManager;
+        this.startingCharacter = startingCharacter;
         this.saveService = new it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService();
     }
 
@@ -50,7 +52,7 @@ public class DungeonController {
         // Se c'è un salvataggio da ricaricare o no viene gestito prima. 
         // Qui per ora facciamo startNewRun se il currentLevel è null
         if (dungeonService.getCurrentLevel() == null) {
-            dungeonService.startNewRun();
+            dungeonService.startNewRun(startingCharacter != null ? startingCharacter : it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.KNIGHT);
         } else {
             String loadedDir = dungeonService.getLoadedDirection();
             if (loadedDir != null) {
@@ -130,15 +132,20 @@ public class DungeonController {
             }
         }, roomData.isBossRoom());
 
-        RoomRenderer.renderPlayer(roomPane, lastEntryDirection);
+        String spritePath = dungeonService.getPlayer().getCharacterType().getSpritePath();
+        RoomRenderer.renderPlayer(roomPane, lastEntryDirection, spritePath);
 
-        // Renderizza la botola se il boss è stato sconfitto
         if (roomData.trapdoorActive()) {
             RoomRenderer.renderTrapdoor(roomPane, () -> {
-                dungeonService.advanceFloor();
-                lastEntryDirection = null;
-                selectedEnemyIndex = -1;
-                updateView();
+                try {
+                    dungeonService.advanceFloor();
+                    lastEntryDirection = null;
+                    selectedEnemyIndex = -1;
+                    javafx.application.Platform.runLater(this::updateView);
+                } catch (Exception e) {
+                    System.err.println("Errore durante l'avanzamento di piano:");
+                    e.printStackTrace();
+                }
             });
         }
 
@@ -178,7 +185,7 @@ public class DungeonController {
         restartBtn.setOnAction(e -> {
             lastEntryDirection = null;
             selectedEnemyIndex = -1;
-            dungeonService.startNewRun();
+            dungeonService.startNewRun(startingCharacter != null ? startingCharacter : it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.KNIGHT);
             updateView();
         });
 
@@ -266,7 +273,13 @@ public class DungeonController {
         
         overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 30; -fx-border-color: " + borderColor + "; -fx-border-width: 3; -fx-background-radius: 10; -fx-border-radius: 10;");
         
-        Label title = new Label("Scegli un dado da incantare con: " + element.name());
+        String elementStr = switch (element) {
+            case FIRE -> "Fuoco";
+            case POISON -> "Veleno";
+            case ELECTRIC -> "Elettro";
+            default -> element.name();
+        };
+        Label title = new Label("Scegli un dado da incantare con: " + elementStr);
         title.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
         
         javafx.scene.layout.HBox diceBox = new javafx.scene.layout.HBox(10);

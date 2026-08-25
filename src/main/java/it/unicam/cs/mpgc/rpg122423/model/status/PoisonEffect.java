@@ -28,7 +28,7 @@ public class PoisonEffect implements StatusEffect {
         if (!isExpired()) {
             target.takeDamage(damagePerTurn);
             remainingTurns--;
-            System.out.println("☠️ Poison tick! " + target.getName() + " subisce " + damagePerTurn + " danni. (Turni rimanenti: " + remainingTurns + ")");
+            System.out.println("☠️ Tic di Veleno! " + target.getName() + " subisce " + damagePerTurn + " danni. (Turni rimanenti: " + remainingTurns + ")");
         }
     }
 

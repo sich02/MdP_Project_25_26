@@ -90,10 +90,14 @@ public class RoomRenderer {
         }
     }
 
-    public static void renderPlayer(Pane roomPane, Direction lastEntryDirection) {
+    public static void renderPlayer(Pane roomPane, Direction lastEntryDirection, String spritePath) {
         double playerSize = PLAYER_SIZE;
+        if (spritePath != null && (spritePath.contains("DexPlayer") || spritePath.contains("IntPlayer"))) {
+            playerSize = PLAYER_SIZE * 0.5; // Scale down by 50% to match the visual size of the Knight
+        }
+        
         try {
-            ImageView playerSprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream("/assets/player.png")));
+            ImageView playerSprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream(spritePath)));
             playerSprite.setFitWidth(playerSize);
             playerSprite.setFitHeight(playerSize);
             playerSprite.setPreserveRatio(true);

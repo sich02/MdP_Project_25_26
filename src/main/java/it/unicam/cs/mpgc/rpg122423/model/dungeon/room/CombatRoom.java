@@ -14,20 +14,23 @@ public class CombatRoom implements Room, Lootable, Combattable {
     private final List<Enemy> enemies;
     private TurnPhase currentPhase;
     private int currentEnemyTurnIndex;
+    private final Item lootItem;
 
     /**
      * Crea una stanza di combattimento con i nemici forniti dall'esterno.
      *
      * @param generatesLoot se la stanza genera loot alla fine del combattimento
      * @param enemies       lista di nemici già generati dal service
+     * @param lootItem      l'oggetto di loot generato
      */
-    public CombatRoom(boolean generatesLoot, List<Enemy> enemies) {
+    public CombatRoom(boolean generatesLoot, List<Enemy> enemies, Item lootItem) {
         this.cleared = false;
         this.generatesLoot = generatesLoot;
         this.lootAvailable = generatesLoot;
         this.enemies = enemies;
         this.currentPhase = TurnPhase.INITIAL_ROLL;
         this.currentEnemyTurnIndex = 0;
+        this.lootItem = lootItem;
     }
 
     // --- Combattable ---
@@ -64,10 +67,10 @@ public class CombatRoom implements Room, Lootable, Combattable {
 
     // --- Lootable ---
     @Override
-    public boolean hasLoot() { return isCleared() && generatesLoot && lootAvailable; }
+    public boolean hasLoot() { return isCleared() && generatesLoot && lootAvailable && lootItem != null; }
 
     @Override
-    public Item getLoot() { return null; } // Da implementare in futuro con consumabili
+    public Item getLoot() { return lootItem; }
 
     @Override
     public void claimLoot() { this.lootAvailable = false; }

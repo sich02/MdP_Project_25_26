@@ -15,6 +15,11 @@ public class MainMenuController {
     @FXML
     private javafx.scene.control.Button continueButton;
     
+    @FXML
+    private javafx.scene.layout.VBox characterSelectionOverlay;
+    
+    private it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter selectedCharacter = null;
+    
     private final it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService saveService = new it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService();
     private boolean hasSave = false;
     private it.unicam.cs.mpgc.rpg122423.entity.SaveGame saveGame = null;
@@ -33,7 +38,38 @@ public class MainMenuController {
 
     @FXML
     private void handleNewRun(ActionEvent event) {
-        System.out.println("Avvio Nuova Run! Generazione dungeon...");
+        System.out.println("Apertura menu di selezione personaggio...");
+        if (characterSelectionOverlay != null) {
+            characterSelectionOverlay.setVisible(true);
+        } else {
+            // Fallback se l'overlay non è stato caricato dall'FXML
+            startGameWithCharacter(event, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.KNIGHT);
+        }
+    }
+
+    @FXML
+    private void selectKnight(ActionEvent event) {
+        startGameWithCharacter(event, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.KNIGHT);
+    }
+
+    @FXML
+    private void selectRogue(ActionEvent event) {
+        startGameWithCharacter(event, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.ROGUE);
+    }
+
+    @FXML
+    private void selectMage(ActionEvent event) {
+        startGameWithCharacter(event, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.MAGE);
+    }
+
+    @FXML
+    private void closeCharacterSelection(ActionEvent event) {
+        if (characterSelectionOverlay != null) characterSelectionOverlay.setVisible(false);
+    }
+    
+    private void startGameWithCharacter(ActionEvent event, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter character) {
+        this.selectedCharacter = character;
+        System.out.println("Avvio Nuova Run con personaggio: " + character.getDisplayName());
         loadScene(event, "/dungeon.fxml", false);
     }
 
@@ -62,7 +98,7 @@ public class MainMenuController {
                         if (isLoad && saveGame != null) {
                             dungeonService.restoreGame(saveGame);
                         }
-                        return new DungeonController(dungeonService, new CombatUIManager());
+                        return new DungeonController(dungeonService, new CombatUIManager(), selectedCharacter);
                     }
                     try {
                         return clazz.getDeclaredConstructor().newInstance();

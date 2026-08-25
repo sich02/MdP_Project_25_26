@@ -24,6 +24,9 @@ public class PlayerEntity {
 
     @Column(nullable = false)
     private int bonusDamage;
+    
+    @Column(nullable = false)
+    private String characterType;
 
     public PlayerEntity() {}
 
@@ -44,4 +47,7 @@ public class PlayerEntity {
 
     public int getBonusDamage() { return bonusDamage; }
     public void setBonusDamage(int bonusDamage) { this.bonusDamage = bonusDamage; }
+
+    public String getCharacterType() { return characterType; }
+    public void setCharacterType(String characterType) { this.characterType = characterType; }
 }

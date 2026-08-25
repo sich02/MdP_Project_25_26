@@ -63,7 +63,18 @@ public class LayoutGenerator {
 
         for (Coordinate coord : shape) {
             boolean generatesLoot = random.nextBoolean();
-            layout.putIfAbsent(coord, new CombatRoom(generatesLoot, createEnemies(floorNumber)));
+            it.unicam.cs.mpgc.rpg122423.model.item.Item lootItem = null;
+            if (generatesLoot) {
+                int roll = random.nextInt(5);
+                lootItem = switch (roll) {
+                    case 0 -> new it.unicam.cs.mpgc.rpg122423.model.item.CoinItem();
+                    case 1 -> new it.unicam.cs.mpgc.rpg122423.model.item.KeyItem();
+                    case 2 -> new it.unicam.cs.mpgc.rpg122423.model.item.HalfHeartItem();
+                    case 3 -> new it.unicam.cs.mpgc.rpg122423.model.item.RedHeartItem();
+                    default -> new it.unicam.cs.mpgc.rpg122423.model.item.DoubleHeartItem();
+                };
+            }
+            layout.putIfAbsent(coord, new CombatRoom(generatesLoot, createEnemies(floorNumber), lootItem));
         }
 
         return layout;

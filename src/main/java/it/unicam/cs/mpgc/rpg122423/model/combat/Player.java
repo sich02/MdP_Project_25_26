@@ -20,22 +20,31 @@ public class Player implements StatusEffectHolder {
     private boolean hasRolled;
     private boolean hasAttacked;
     private int rerollsLeft;
+    
+    private final PlayableCharacter characterType;
+    private final int maxRerolls;
 
-    public Player() {
-        this.maxHp = 6;
+    public Player(PlayableCharacter characterType) {
+        this.characterType = characterType;
+        this.maxHp = characterType.getBaseHp();
         this.currentHp = maxHp;
         this.gold = 0;
         this.keys = 0;
-        this.bonusDamage = 0;
+        this.bonusDamage = characterType.getBaseBonusDamage();
+        this.maxRerolls = characterType.getRerollsPerTurn();
         this.dicePool = new DicePool();
         this.activeEffects = new ArrayList<>();
         resetTurnState();
+    }
+    
+    public Player() {
+        this(PlayableCharacter.KNIGHT); // Default per retrocompatibilità
     }
 
     public void resetTurnState() {
         this.hasRolled = false;
         this.hasAttacked = false;
-        this.rerollsLeft = 3;
+        this.rerollsLeft = this.maxRerolls;
     }
 
     public void restoreState(int currentHp, int maxHp, int gold, int keys, int bonusDamage) {
@@ -104,6 +113,8 @@ public class Player implements StatusEffectHolder {
     public int getMaxHp() {return maxHp;}
     public int getGold() {return gold;}
     public int getKeys() {return keys;}
+    public PlayableCharacter getCharacterType() { return characterType; }
+    public int getMaxRerolls() { return maxRerolls; }
 
     /**
      * Helper per l'interfaccia grafica: converte i punti interni in cuori visibili (es. 5 -> 2.5)

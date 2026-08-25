@@ -40,6 +40,8 @@ public class SaveService {
             playerEntity.setGold(player.getGold());
             playerEntity.setKeys(player.getKeys());
             playerEntity.setBonusDamage(player.getBonusDamage());
+            playerEntity.setCharacterType(player.getCharacterType().name());
+            
             
             saveGame.setPlayer(playerEntity);
 
