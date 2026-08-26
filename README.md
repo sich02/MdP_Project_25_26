@@ -54,8 +54,7 @@ Tutte le classi risiedono nel package `it.unicam.cs.mpgc.rpg122423`, organizzato
 
 ## Uso di strumenti di intelligenza artificiale
 
-Utilizzato Claude (Anthropic) come supporto durante lo sviluppo per:
-
+##Utilizzato Claude (Anthropic) come supporto durante lo sviluppo per:
 -Chiarire errori di compilazione e problemi di configurazione Gradle
 -Suggerimenti sulla struttura dei package e delle classi
 -Generazione di una prima versione di alcune classi, poi analizzata, compresa e adattata manualmente
