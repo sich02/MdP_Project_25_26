@@ -44,7 +44,12 @@ public class DicePool {
         return diceList.size();
     }
 
+    /**
+     * Restituisce una vista non modificabile della lista dei dadi.
+     * I singoli dadi restano mutabili (roll, setElement), ma non è possibile
+     * aggiungere o rimuovere dadi dall'esterno.
+     */
     public List<Dice> getDiceList() {
-        return diceList;
+        return java.util.Collections.unmodifiableList(diceList);
     }
 }

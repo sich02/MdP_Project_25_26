@@ -2,11 +2,9 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
 import it.unicam.cs.mpgc.rpg122423.model.combat.Enemy;
 import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
+import it.unicam.cs.mpgc.rpg122423.model.item.Item;
 
 import java.util.List;
-
-import it.unicam.cs.mpgc.rpg122423.model.item.Item;
-import it.unicam.cs.mpgc.rpg122423.model.item.ItemPool;
 
 /**
  * Stanza del Boss. Contiene un singolo boss fornito dall'esterno.
@@ -17,18 +15,20 @@ public class BossRoom implements Room, Combattable, Lootable {
     private boolean cleared = false;
     private boolean trapdoorActive = false;
     private boolean lootAvailable = false;
-    private Item lootItem;
+    private final Item lootItem;
     private final Enemy boss;
     private TurnPhase currentPhase;
     private int currentEnemyTurnIndex;
 
     /**
-     * Crea una stanza del Boss con il boss fornito dall'esterno.
+     * Crea una stanza del Boss con il boss e il loot forniti dall'esterno (DIP).
      *
-     * @param boss il nemico boss già creato dal service
+     * @param boss     il nemico boss già creato dal service
+     * @param lootItem l'oggetto di loot generato dall'esterno
      */
-    public BossRoom(Enemy boss) {
+    public BossRoom(Enemy boss, Item lootItem) {
         this.boss = boss;
+        this.lootItem = lootItem;
         this.currentPhase = TurnPhase.INITIAL_ROLL;
         this.currentEnemyTurnIndex = 0;
     }
@@ -45,13 +45,14 @@ public class BossRoom implements Room, Combattable, Lootable {
     @Override public void resetEnemyTurnIndex() { this.currentEnemyTurnIndex = 0; }
 
     // --- Room ---
+
+    /**
+     * Query pura: verifica se il boss è morto. Se sì, attiva la botola e il loot (LSP).
+     */
     @Override
     public boolean isCleared() {
         if (boss.isDead() && !this.cleared) {
-            this.cleared = true;
-            this.trapdoorActive = true;
-            this.lootAvailable = true;
-            this.lootItem = ItemPool.getRandomItem();
+            markAsCleared();
         }
         return cleared;
     }
@@ -62,7 +63,6 @@ public class BossRoom implements Room, Combattable, Lootable {
             this.cleared = true;
             this.trapdoorActive = true;
             this.lootAvailable = true;
-            this.lootItem = ItemPool.getRandomItem();
         }
     }
 
@@ -79,4 +79,3 @@ public class BossRoom implements Room, Combattable, Lootable {
     @Override
     public void claimLoot() { this.lootAvailable = false; }
 }
-

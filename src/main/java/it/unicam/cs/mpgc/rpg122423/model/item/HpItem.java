@@ -13,7 +13,7 @@ public class HpItem extends Item {
 
     @Override
     public void onPickup(Player player) {
-        if (player.getMaxHp() < 12) {
+        if (player.getMaxHp() < Player.MAX_HP) {
             player.increaseMaxHp(2);
             player.heal(2);
         } else {

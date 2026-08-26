@@ -1,26 +1,34 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
 import it.unicam.cs.mpgc.rpg122423.model.item.Item;
-import it.unicam.cs.mpgc.rpg122423.model.item.ItemPool;
 
+/**
+ * Stanza del tesoro. Contiene un oggetto fornito dall'esterno (DIP).
+ */
 public class TreasureRoom implements Room, Lootable, Lockable {
     private boolean cleared;
     private boolean isLocked;
     private boolean lootAvailable;
     private final Item lootItem;
 
-    public TreasureRoom(boolean requiresKey) {
+    /**
+     * Crea una stanza del tesoro con il loot iniettato dall'esterno.
+     *
+     * @param requiresKey se la stanza richiede una chiave per entrare
+     * @param lootItem    l'oggetto di loot generato dall'esterno
+     */
+    public TreasureRoom(boolean requiresKey, Item lootItem) {
         this.isLocked = requiresKey;
         this.cleared = false;
         this.lootAvailable = true;
-        this.lootItem = ItemPool.getRandomItem();
+        this.lootItem = lootItem;
     }
 
     @Override
     public boolean isCleared() { return cleared; }
 
     @Override
-    public void markAsCleared(){this.cleared = true;}
+    public void markAsCleared() { this.cleared = true; }
 
     @Override
     public boolean isLocked() { return isLocked; }
@@ -43,4 +51,3 @@ public class TreasureRoom implements Room, Lootable, Lockable {
     @Override
     public String getRoomType() { return "TREASURE"; }
 }
-

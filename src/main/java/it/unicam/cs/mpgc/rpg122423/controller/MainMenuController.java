@@ -94,11 +94,11 @@ public class MainMenuController {
             if (fxmlPath.equals("/dungeon.fxml")) {
                 loader.setControllerFactory(clazz -> {
                     if (clazz == DungeonController.class) {
-                        it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService dungeonService = new it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService();
+                        it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService dungeonService = new it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService(saveService);
                         if (isLoad && saveGame != null) {
                             dungeonService.restoreGame(saveGame);
                         }
-                        return new DungeonController(dungeonService, new CombatUIManager(), selectedCharacter);
+                        return new DungeonController(dungeonService, new CombatUIManager(), selectedCharacter, saveService);
                     }
                     try {
                         return clazz.getDeclaredConstructor().newInstance();

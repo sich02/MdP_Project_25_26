@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Player implements StatusEffectHolder {
-    private int maxHp; // Ora gestito a "mezzi cuori", massimale di 12 (6 cuori interi)
+    public static final int MAX_HP = 12; // 6 cuori interi = 12 mezzi cuori
+    private int maxHp;
     private int currentHp;
     private int gold;
     private int keys;
@@ -75,7 +76,7 @@ public class Player implements StatusEffectHolder {
     public boolean isDead() {return currentHp <= 0;}
 
     public void increaseMaxHp(int amount) {
-        this.maxHp = Math.min(12, this.maxHp + amount);
+        this.maxHp = Math.min(MAX_HP, this.maxHp + amount);
     }
 
 

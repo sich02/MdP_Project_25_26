@@ -3,7 +3,9 @@ package it.unicam.cs.mpgc.rpg122423.controller;
 import it.unicam.cs.mpgc.rpg122423.dto.PlayerDTO;
 import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
+import it.unicam.cs.mpgc.rpg122423.model.dice.Element;
 import it.unicam.cs.mpgc.rpg122423.service.dungeon.DungeonService;
+import it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService;
 
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
@@ -32,14 +34,16 @@ public class DungeonController {
 
     private final DungeonService dungeonService;
     private final CombatUIManager combatUIManager;
-    private final it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService saveService;
+    private final SaveService saveService;
     private final it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter startingCharacter;
 
-    public DungeonController(DungeonService dungeonService, CombatUIManager combatUIManager, it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter startingCharacter) {
+    public DungeonController(DungeonService dungeonService, CombatUIManager combatUIManager,
+                             it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter startingCharacter,
+                             SaveService saveService) {
         this.dungeonService = dungeonService;
         this.combatUIManager = combatUIManager;
         this.startingCharacter = startingCharacter;
-        this.saveService = new it.unicam.cs.mpgc.rpg122423.service.persistence.SaveService();
+        this.saveService = saveService;
     }
 
     private Direction lastEntryDirection = null;
@@ -48,9 +52,7 @@ public class DungeonController {
     @FXML
     public void initialize() {
         System.out.println("Dungeon UI caricata. Avvio Service...");
-        
-        // Se c'è un salvataggio da ricaricare o no viene gestito prima. 
-        // Qui per ora facciamo startNewRun se il currentLevel è null
+
         if (dungeonService.getCurrentLevel() == null) {
             dungeonService.startNewRun(startingCharacter != null ? startingCharacter : it.unicam.cs.mpgc.rpg122423.model.combat.PlayableCharacter.KNIGHT);
         } else {
@@ -90,7 +92,6 @@ public class DungeonController {
     @FXML
     public void handleSaveAndQuit(ActionEvent event) {
         saveService.saveGame(dungeonService, lastEntryDirection != null ? lastEntryDirection.name() : null);
-        // Torna al menu principale
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/main_menu.fxml"));
             javafx.scene.Parent root = loader.load();
@@ -231,8 +232,6 @@ public class DungeonController {
         }
     }
 
-
-
     private void tryMove(Direction dir) {
         if (dungeonService.interactWithDirection(dir)) {
             lastEntryDirection = dir;
@@ -255,7 +254,7 @@ public class DungeonController {
             updateView();
 
             if (dungeonService.getPlayerData().currentHearts() <= 0) {
-                return; // Stop the sequence if the player died from this attack
+                return;
             }
 
             if (enemyAttacked) {
@@ -268,72 +267,60 @@ public class DungeonController {
         });
     }
 
-    private void showElementalSelectionUI(it.unicam.cs.mpgc.rpg122423.model.dice.Element element) {
+    /**
+     * Mostra la UI di selezione elementale. Usa Element.getColor() e Element.getDisplayName() (OCP).
+     */
+    private void showElementalSelectionUI(Element element) {
         javafx.scene.layout.VBox overlay = new javafx.scene.layout.VBox(20);
         overlay.setAlignment(javafx.geometry.Pos.CENTER);
-        
-        String borderColor = "white";
-        if (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) borderColor = "orange";
-        else if (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON) borderColor = "limegreen";
-        else if (element == it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC) borderColor = "cyan";
-        
+
+        String borderColor = element.getColor().toString().replace("0x", "#");
+
         overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 30; -fx-border-color: " + borderColor + "; -fx-border-width: 3; -fx-background-radius: 10; -fx-border-radius: 10;");
-        
-        String elementStr = switch (element) {
-            case FIRE -> "Fuoco";
-            case POISON -> "Veleno";
-            case ELECTRIC -> "Elettro";
-            default -> element.name();
-        };
-        Label title = new Label("Scegli un dado da incantare con: " + elementStr);
+
+        Label title = new Label("Scegli un dado da incantare con: " + element.getDisplayName());
         title.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
-        
+
         javafx.scene.layout.HBox diceBox = new javafx.scene.layout.HBox(10);
         diceBox.setAlignment(javafx.geometry.Pos.CENTER);
-        
+
         List<Integer> diceValues = dungeonService.getPlayerDiceValues();
-        List<it.unicam.cs.mpgc.rpg122423.model.dice.Element> diceElements = dungeonService.getPlayerDiceElements();
-        
+        List<Element> diceElements = dungeonService.getPlayerDiceElements();
+
         for (int i = 0; i < diceValues.size(); i++) {
             int index = i;
             javafx.scene.layout.StackPane diePane = new javafx.scene.layout.StackPane();
-            
+
             Rectangle bg = new Rectangle(50, 50);
             bg.setArcWidth(10);
             bg.setArcHeight(10);
             bg.setFill(Color.WHITE);
-            
-            if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.FIRE) {
-                bg.setStroke(Color.ORANGERED);
-                bg.setStrokeWidth(3);
-            } else if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.POISON) {
-                bg.setStroke(Color.LIMEGREEN);
-                bg.setStrokeWidth(3);
-            } else if (diceElements.get(i) == it.unicam.cs.mpgc.rpg122423.model.dice.Element.ELECTRIC) {
-                bg.setStroke(Color.CYAN);
+
+            Element diceElement = diceElements.get(i);
+            if (diceElement != Element.NONE) {
+                bg.setStroke(diceElement.getColor());
                 bg.setStrokeWidth(3);
             }
-            
+
             Label valueLabel = new Label(String.valueOf(diceValues.get(i)));
             valueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
-            
+
             diePane.getChildren().addAll(bg, valueLabel);
             diePane.setCursor(Cursor.HAND);
-            
+
             diePane.setOnMouseClicked(e -> {
                 dungeonService.setPlayerDiceElement(index, element);
                 updateView();
             });
-            
+
             diceBox.getChildren().add(diePane);
         }
-        
+
         overlay.getChildren().addAll(title, diceBox);
-        
-        // Posiziona al centro della stanza
+
         overlay.setLayoutX(100);
         overlay.setLayoutY(120);
-        
+
         roomPane.getChildren().add(overlay);
     }
 }

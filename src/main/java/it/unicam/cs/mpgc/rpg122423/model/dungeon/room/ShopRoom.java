@@ -1,55 +1,48 @@
 package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 
 import it.unicam.cs.mpgc.rpg122423.model.item.Item;
-import it.unicam.cs.mpgc.rpg122423.model.item.ItemPool;
-import it.unicam.cs.mpgc.rpg122423.model.item.KeyItem;
-import it.unicam.cs.mpgc.rpg122423.model.item.RedHeartItem;
-import it.unicam.cs.mpgc.rpg122423.model.item.HalfHeartItem;
-import it.unicam.cs.mpgc.rpg122423.model.item.DoubleHeartItem;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
+/**
+ * Stanza del negozio. Gli oggetti in vendita vengono forniti dall'esterno (DIP).
+ */
 public class ShopRoom implements Room, Lockable {
     private boolean isLocked;
 
+    /**
+     * Rappresenta un oggetto acquistabile nel negozio.
+     * Incapsula correttamente lo stato di acquisto (ISP).
+     */
     public static class Purchasable {
-        public final Item item;
-        public final int price;
-        public boolean isBought;
+        private final Item item;
+        private final int price;
+        private boolean bought;
 
         public Purchasable(Item item, int price) {
             this.item = item;
             this.price = price;
-            this.isBought = false;
+            this.bought = false;
         }
+
+        public Item getItem() { return item; }
+        public int getPrice() { return price; }
+        public boolean isBought() { return bought; }
+        public void markAsBought() { this.bought = true; }
     }
 
-    private final List<Purchasable> itemsForSale = new ArrayList<>();
+    private final List<Purchasable> itemsForSale;
 
-    public ShopRoom(boolean requiresKey) {
+    /**
+     * Crea una ShopRoom con gli oggetti in vendita forniti dall'esterno.
+     *
+     * @param requiresKey se la stanza richiede una chiave per entrare
+     * @param itemsForSale la lista di oggetti acquistabili, generata dall'esterno
+     */
+    public ShopRoom(boolean requiresKey, List<Purchasable> itemsForSale) {
         this.isLocked = requiresKey;
-        Random random = new Random();
-
-        // Oggetto principale: HP Item molto probabile (es. 60% + chance base), altrimenti random, a 15 monete
-        Item mainItem = (random.nextInt(100) < 60) ? ItemPool.getRandomHpItem() : ItemPool.getRandomItem();
-        itemsForSale.add(new Purchasable(mainItem, 15));
-
-        // Oggetto consumabile: Chiave o Cuore a 5 monete (scontato a 3 col 25% di prob)
-        int price = random.nextInt(100) < 25 ? 3 : 5;
-        Item consumable;
-        if (random.nextBoolean()) {
-            consumable = new KeyItem();
-        } else {
-            int heartRoll = random.nextInt(3);
-            consumable = switch (heartRoll) {
-                case 0 -> new HalfHeartItem();
-                case 1 -> new RedHeartItem();
-                default -> new DoubleHeartItem();
-            };
-        }
-        itemsForSale.add(new Purchasable(consumable, price));
+        this.itemsForSale = new ArrayList<>(itemsForSale);
     }
 
     public List<Purchasable> getItemsForSale() {
@@ -60,7 +53,7 @@ public class ShopRoom implements Room, Lockable {
     public boolean isCleared() { return true; }
 
     @Override
-    public void markAsCleared() {}
+    public void markAsCleared() { /* ShopRoom è sempre "cleared" per definizione. */ }
 
     @Override
     public boolean isLocked() { return isLocked; }

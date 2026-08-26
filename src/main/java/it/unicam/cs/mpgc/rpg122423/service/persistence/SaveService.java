@@ -61,7 +61,7 @@ public class SaveService {
                     }
                     if (r instanceof it.unicam.cs.mpgc.rpg122423.model.dungeon.room.ShopRoom shopRoom) {
                         shopData = shopRoom.getItemsForSale().stream()
-                                .map(p -> String.valueOf(p.isBought))
+                                .map(p -> String.valueOf(p.isBought()))
                                 .collect(java.util.stream.Collectors.joining(","));
                     }
                     saveGame.addClearedRoom(new ClearedRoomEntity(entry.getKey().x(), entry.getKey().y(), claimed, shopData));
