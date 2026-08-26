@@ -54,10 +54,10 @@ Tutte le classi risiedono nel package `it.unicam.cs.mpgc.rpg122423`, organizzato
 
 ## Uso di strumenti di intelligenza artificiale
 
-Nello sviluppo di questo progetto è stato utilizzato **Claude (Anthropic)** come assistente per:
+Utilizzato Claude (Anthropic) come supporto durante lo sviluppo per:
 
-- l'analisi dei requisiti e la progettazione del modello di dominio;
-- la revisione del codice rispetto ai principi SOLID e alla ricerca di violazioni delle invarianti architetturali (es. generazione del dungeon);
-- il supporto nella scrittura e nel debug di parti del codice.
-
-Le decisioni architetturali e di design sono state prese e validate dallo studente; l'assistente AI è stato impiegato come supporto al processo di sviluppo, non come sostituto della progettazione.
+Chiarire errori di compilazione e problemi di configurazione Gradle
+Suggerimenti sulla struttura dei package e delle classi
+Generazione di una prima versione di alcune classi, poi analizzata, compresa e adattata manualmente
+Supporto nella scrittura dei test JUnit
+Per una descrizione più dettagliata del progetto consultare la Wiki del repository.
