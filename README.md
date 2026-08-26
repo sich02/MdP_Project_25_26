@@ -52,7 +52,7 @@ Tutte le classi risiedono nel package `it.unicam.cs.mpgc.rpg122423`, organizzato
 - `entity` — entità Hibernate per la persistenza
 - `dto` — oggetti di trasferimento dati tra dominio e UI
 
-## Struttura del progetto
+## Uso di strumenti di AI
 
 Utilizzato Claude (Anthropic) come supporto durante lo sviluppo per:
 
