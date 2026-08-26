@@ -94,12 +94,13 @@ public class DungeonController {
         saveService.saveGame(dungeonService, lastEntryDirection != null ? lastEntryDirection.name() : null);
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/main_menu.fxml"));
+            // Nessuna controllerFactory: MainMenuController ha costruttore di default ed è gestito da FXML
             javafx.scene.Parent root = loader.load();
-            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1024, 768);
             javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-            stage.setScene(scene);
+            stage.setScene(new javafx.scene.Scene(root, 1024, 768));
             stage.show();
         } catch (Exception e) {
+            System.err.println("Errore nel tornare al menu principale:");
             e.printStackTrace();
         }
     }
@@ -140,9 +141,11 @@ public class DungeonController {
             RoomRenderer.renderTrapdoor(roomPane, () -> {
                 try {
                     dungeonService.advanceFloor();
+                    // Auto-salvataggio dopo l'avanzamento (fuori da advanceFloor per evitare eccezioni silenziose)
+                    saveService.saveGame(dungeonService, null);
                     lastEntryDirection = null;
                     selectedEnemyIndex = -1;
-                    javafx.application.Platform.runLater(this::updateView);
+                    updateView();
                 } catch (Exception e) {
                     System.err.println("Errore durante l'avanzamento di piano:");
                     e.printStackTrace();

@@ -98,20 +98,19 @@ public class CombatService {
             Element element = d.getElement();
             if (element == Element.NONE) continue;
 
-            if (ThreadLocalRandom.current().nextDouble() < ELEMENTAL_PROC_CHANCE) {
-                if (element == Element.ELECTRIC) {
-                    electricProcs++;
-                } else {
-                    StatusEffect effect = element.createStatusEffect(target, d.getCurrentValue());
-                    if (effect != null) {
-                        target.addStatusEffect(effect);
-                        System.out.println(element.getDisplayName() + ": " + target.getName() + " subisce l'effetto! (Danno: " + d.getCurrentValue() + ")");
-                    }
+            if (element == Element.ELECTRIC) {
+                // L'elettricità si attiva sempre (100% chance)
+                electricProcs++;
+            } else if (ThreadLocalRandom.current().nextDouble() < ELEMENTAL_PROC_CHANCE) {
+                StatusEffect effect = element.createStatusEffect(target, d.getCurrentValue());
+                if (effect != null) {
+                    target.addStatusEffect(effect);
+                    System.out.println(element.getDisplayName() + ": " + target.getName() + " subisce l'effetto! (Danno: " + d.getCurrentValue() + ")");
                 }
             }
         }
 
-        // Chain elettrica
+        // Chain elettrica: colpisce sempre i bersagli aggiuntivi
         if (electricProcs > 0 && aliveEnemies.size() > 1) {
             int chainDamage = Math.max(1, (int) (damage * CHAIN_DAMAGE_MULTIPLIER));
             List<Enemy> closest = new ArrayList<>(aliveEnemies);

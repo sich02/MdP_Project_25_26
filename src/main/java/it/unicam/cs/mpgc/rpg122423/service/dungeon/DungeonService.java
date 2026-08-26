@@ -149,9 +149,6 @@ public class DungeonService {
         Floor floor = generator.generateFloor(currentFloorNumber);
         this.currentLevel = new DungeonLevel(floor, floor.getStartingCoordinate());
         System.out.println("Piano " + currentFloorNumber + " generato!");
-
-        // Auto-save at floor change
-        saveService.saveGame(this, null);
     }
 
     public int getCurrentFloorNumber() {
