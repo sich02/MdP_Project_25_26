@@ -56,8 +56,8 @@ Tutte le classi risiedono nel package `it.unicam.cs.mpgc.rpg122423`, organizzato
 
 Utilizzato Claude (Anthropic) come supporto durante lo sviluppo per:
 
-Chiarire errori di compilazione e problemi di configurazione Gradle
-Suggerimenti sulla struttura dei package e delle classi
-Generazione di una prima versione di alcune classi, poi analizzata, compresa e adattata manualmente
-Supporto nella scrittura dei test JUnit
-Per una descrizione più dettagliata del progetto consultare la Wiki del repository.
+-Chiarire errori di compilazione e problemi di configurazione Gradle
+-Suggerimenti sulla struttura dei package e delle classi
+-Generazione di una prima versione di alcune classi, poi analizzata, compresa e adattata manualmente
+-Supporto nella scrittura dei test JUnit
+-Per una descrizione più dettagliata del progetto consultare la Wiki del repository.
