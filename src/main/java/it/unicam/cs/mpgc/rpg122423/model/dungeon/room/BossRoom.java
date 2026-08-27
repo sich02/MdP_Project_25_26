@@ -21,7 +21,7 @@ public class BossRoom implements Room, Combattable, Lootable {
     private int currentEnemyTurnIndex;
 
     /**
-     * Crea una stanza del Boss con il boss e il loot forniti dall'esterno (DIP).
+     * Crea una stanza del Boss con il boss e il loot forniti dall'esterno.
      *
      * @param boss     il nemico boss già creato dal service
      * @param lootItem l'oggetto di loot generato dall'esterno
@@ -44,16 +44,9 @@ public class BossRoom implements Room, Combattable, Lootable {
     @Override public void advanceEnemyTurnIndex() { this.currentEnemyTurnIndex++; }
     @Override public void resetEnemyTurnIndex() { this.currentEnemyTurnIndex = 0; }
 
-    // --- Room ---
-
-    /**
-     * Query pura: verifica se il boss è morto. Se sì, attiva la botola e il loot (LSP).
-     */
+    // --- Room --- (Fix LSP: isCleared() è una pura query senza side-effect)
     @Override
     public boolean isCleared() {
-        if (boss.isDead() && !this.cleared) {
-            markAsCleared();
-        }
         return cleared;
     }
 
@@ -66,8 +59,18 @@ public class BossRoom implements Room, Combattable, Lootable {
         }
     }
 
+    /**
+     * Verifica se il boss è morto e, in tal caso, marca la stanza come completata.
+     * Metodo comando esplicito, separato dalla query isCleared() (CQS).
+     */
+    public void checkAndClearIfBossDead() {
+        if (!cleared && boss.isDead()) {
+            markAsCleared();
+        }
+    }
+
     @Override
-    public String getRoomType() { return "BOSS"; }
+    public RoomType getRoomType() { return RoomType.BOSS; }
 
     // --- Lootable ---
     @Override

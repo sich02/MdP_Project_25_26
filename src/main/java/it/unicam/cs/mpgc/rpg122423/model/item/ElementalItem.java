@@ -5,23 +5,36 @@ import it.unicam.cs.mpgc.rpg122423.model.dice.Element;
 
 /**
  * Oggetto che assegna un elemento a un dado a scelta del giocatore.
+ * L'assegnazione effettiva avviene nel Controller dopo la selezione del dado.
  */
-public class ElementalItem extends Item {
+public class ElementalItem implements Item {
+    private final String name;
+    private final String imagePath;
     private final Element element;
 
     public ElementalItem(String name, String imagePath, Element element) {
-        super(name, imagePath);
+        this.name = name;
+        this.imagePath = imagePath;
         this.element = element;
     }
 
-    public Element getElement() {
-        return element;
-    }
+    @Override
+    public String getName() { return name; }
 
     @Override
+    public String getImagePath() { return imagePath; }
+
+    public Element getElement() { return element; }
+
+    /**
+     * L'ElementalItem non applica direttamente l'effetto: l'assegnazione
+     * dell'elemento al dado avviene tramite il Controller dopo la selezione.
+     * Questo metodo è intenzionalmente vuoto — il contratto di Item.onPickup()
+     * è "applica l'effetto dell'oggetto", ma per gli oggetti elementali
+     * l'effetto richiede una scelta dell'utente (quale dado incantare).
+     */
+    @Override
     public void onPickup(Player player) {
-        // L'assegnazione avviene tramite la UI (DungeonController), che invocherà il metodo appropriato.
-        // Questo metodo rimane vuoto, oppure possiamo loggare.
-        System.out.println("Hai raccolto un oggetto elementale: " + getName() + ". Attendo la selezione del dado.");
+        // Nessun effetto immediato: richiede interazione utente (selezione dado)
     }
 }

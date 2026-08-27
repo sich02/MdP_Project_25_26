@@ -1,13 +1,23 @@
 package it.unicam.cs.mpgc.rpg122423.model.combat;
 
 import it.unicam.cs.mpgc.rpg122423.dto.EnemyAction;
+import it.unicam.cs.mpgc.rpg122423.model.status.StatusEffect;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Boss nemico con stats che scalano in base al piano.
  * Alterna attacco normale e attacco pesante (danno doppio).
  */
-public class BossEnemy extends AbstractEnemy {
+public class BossEnemy implements Enemy {
 
+    private final String name;
+    private final int maxHp;
+    private int currentHp;
+    private final int baseDamage;
+    private final List<StatusEffect> activeEffects;
+    private EnemyAction nextAction;
     private boolean nextIsHeavy = false;
 
     /**
@@ -19,17 +29,67 @@ public class BossEnemy extends AbstractEnemy {
      * @param floorNumber numero del piano corrente
      */
     public BossEnemy(String name, int baseHp, int baseDamage, int floorNumber) {
-        super(name, baseHp + (floorNumber - 1) * 10, baseDamage + (floorNumber - 1) * 2);
+        this.name = name;
+        this.maxHp = baseHp + (floorNumber - 1) * 10;
+        this.currentHp = this.maxHp;
+        this.baseDamage = baseDamage + (floorNumber - 1) * 2;
+        this.activeEffects = new ArrayList<>();
+        this.prepareNextAction();
     }
+
+    @Override
+    public String getName() { return name; }
+
+    @Override
+    public int getCurrentHp() { return currentHp; }
+
+    @Override
+    public int getMaxHp() { return maxHp; }
+
+    public int getBaseDamage() { return baseDamage; }
+
+    @Override
+    public void takeDamage(int damage) {
+        this.currentHp = Math.max(0, this.currentHp - damage);
+    }
+
+    @Override
+    public boolean isDead() { return currentHp <= 0; }
+
+    @Override
+    public EnemyAction getNextAction() { return nextAction; }
 
     @Override
     public void prepareNextAction() {
         if (nextIsHeavy) {
             int heavyDmg = baseDamage * 2;
-            setNextAction(new EnemyAction(getName() + " carica un attacco devastante!", heavyDmg, null));
+            this.nextAction = new EnemyAction(name + " carica un attacco devastante!", heavyDmg, null);
         } else {
-            setNextAction(new EnemyAction(getName() + " attacca!", baseDamage, null));
+            this.nextAction = new EnemyAction(name + " attacca!", baseDamage, null);
         }
         nextIsHeavy = !nextIsHeavy;
+    }
+
+    @Override
+    public void tickStatusEffects() {
+        for (StatusEffect effect : new ArrayList<>(activeEffects)) {
+            effect.tick();
+        }
+        activeEffects.removeIf(StatusEffect::isExpired);
+    }
+
+    @Override
+    public void addStatusEffect(StatusEffect effect) {
+        activeEffects.add(effect);
+    }
+
+    @Override
+    public List<StatusEffect> getActiveEffects() {
+        return List.copyOf(activeEffects);
+    }
+
+    @Override
+    public void removeStatusEffect(StatusEffect effect) {
+        activeEffects.remove(effect);
     }
 }

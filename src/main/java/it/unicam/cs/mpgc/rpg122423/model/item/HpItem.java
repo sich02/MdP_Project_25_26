@@ -5,11 +5,20 @@ import it.unicam.cs.mpgc.rpg122423.model.combat.Player;
 /**
  * Oggetto che incrementa la vita massima e cura il giocatore.
  */
-public class HpItem extends Item {
+public class HpItem implements Item {
+    private final String name;
+    private final String imagePath;
 
     public HpItem(String name, String imagePath) {
-        super(name, imagePath);
+        this.name = name;
+        this.imagePath = imagePath;
     }
+
+    @Override
+    public String getName() { return name; }
+
+    @Override
+    public String getImagePath() { return imagePath; }
 
     @Override
     public void onPickup(Player player) {

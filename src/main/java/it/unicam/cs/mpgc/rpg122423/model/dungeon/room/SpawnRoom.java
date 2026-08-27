@@ -10,6 +10,5 @@ public class SpawnRoom implements Room {
     public void markAsCleared() { this.cleared = true; }
 
     @Override
-    public String getRoomType() { return "NORMAL"; }
+    public RoomType getRoomType() { return RoomType.NORMAL; }
 }
-

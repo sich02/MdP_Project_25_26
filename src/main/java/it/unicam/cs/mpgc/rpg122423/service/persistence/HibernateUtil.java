@@ -3,23 +3,27 @@ package it.unicam.cs.mpgc.rpg122423.service.persistence;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+/**
+ * Gestisce la creazione e il ciclo di vita della SessionFactory di Hibernate.
+ * Non è più un Singleton statico: l'istanza viene creata e iniettata esplicitamente.
+ */
 public class HibernateUtil {
-    private static final SessionFactory sessionFactory = buildSessionFactory();
+    private final SessionFactory sessionFactory;
 
-    private static SessionFactory buildSessionFactory() {
+    public HibernateUtil() {
         try {
-            return new Configuration().configure().buildSessionFactory();
+            this.sessionFactory = new Configuration().configure().buildSessionFactory();
         } catch (Throwable ex) {
             System.err.println("Initial SessionFactory creation failed." + ex);
             throw new ExceptionInInitializerError(ex);
         }
     }
 
-    public static SessionFactory getSessionFactory() {
+    public SessionFactory getSessionFactory() {
         return sessionFactory;
     }
 
-    public static void shutdown() {
-        getSessionFactory().close();
+    public void shutdown() {
+        sessionFactory.close();
     }
 }

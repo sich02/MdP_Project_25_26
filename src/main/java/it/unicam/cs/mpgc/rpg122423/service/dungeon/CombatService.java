@@ -7,6 +7,8 @@ import it.unicam.cs.mpgc.rpg122423.model.combat.TurnPhase;
 import it.unicam.cs.mpgc.rpg122423.model.dice.Dice;
 import it.unicam.cs.mpgc.rpg122423.model.dice.Element;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Combattable;
+import it.unicam.cs.mpgc.rpg122423.model.status.BurnEffect;
+import it.unicam.cs.mpgc.rpg122423.model.status.PoisonEffect;
 import it.unicam.cs.mpgc.rpg122423.model.status.StatusEffect;
 
 import java.util.ArrayList;
@@ -16,7 +18,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Gestisce tutta la logica di combattimento: roll dadi, reroll, attacco,
- * turno nemici, applicazione effetti elementali (SRP — estratto da DungeonService).
+ * turno nemici, applicazione effetti elementali.
  */
 public class CombatService {
 
@@ -89,7 +91,19 @@ public class CombatService {
     }
 
     /**
-     * Applica gli effetti elementali dei dadi del giocatore al bersaglio (OCP — usa Element.createStatusEffect()).
+     * Crea un effetto di stato in base all'elemento specificato.
+     * Logica spostata qui da Element per rimuovere il Factory Method dall'enum.
+     */
+    private StatusEffect createStatusEffectForElement(Element element, Enemy target, int damage) {
+        return switch (element) {
+            case FIRE -> new BurnEffect(target, damage);
+            case POISON -> new PoisonEffect(target, damage);
+            default -> null;
+        };
+    }
+
+    /**
+     * Applica gli effetti elementali dei dadi del giocatore al bersaglio.
      */
     private void applyElementalEffects(Player player, Enemy target, List<Enemy> aliveEnemies, int targetIndex, int damage) {
         int electricProcs = 0;
@@ -99,10 +113,9 @@ public class CombatService {
             if (element == Element.NONE) continue;
 
             if (element == Element.ELECTRIC) {
-                // L'elettricità si attiva sempre (100% chance)
                 electricProcs++;
             } else if (ThreadLocalRandom.current().nextDouble() < ELEMENTAL_PROC_CHANCE) {
-                StatusEffect effect = element.createStatusEffect(target, d.getCurrentValue());
+                StatusEffect effect = createStatusEffectForElement(element, target, d.getCurrentValue());
                 if (effect != null) {
                     target.addStatusEffect(effect);
                     System.out.println(element.getDisplayName() + ": " + target.getName() + " subisce l'effetto! (Danno: " + d.getCurrentValue() + ")");

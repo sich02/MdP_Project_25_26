@@ -41,29 +41,30 @@ public class CombatRoom implements Room, Lootable, Combattable {
     @Override public void advanceEnemyTurnIndex() { this.currentEnemyTurnIndex++; }
     @Override public void resetEnemyTurnIndex() { this.currentEnemyTurnIndex = 0; }
 
-    // --- Room ---
+    // --- Room --- (Fix LSP: isCleared() è una pura query senza side-effect)
     @Override
     public boolean isCleared() {
-        if (cleared) return true;
-
-        boolean allDead = true;
-        for (Enemy e : enemies) {
-            if (!e.isDead()) {
-                allDead = false;
-                break;
-            }
-        }
-        if (allDead) {
-            this.cleared = true;
-        }
         return cleared;
     }
 
     @Override
     public void markAsCleared() { this.cleared = true; }
 
+    /**
+     * Verifica se tutti i nemici sono morti e, in tal caso, marca la stanza come completata.
+     * Questo metodo è un comando esplicito, separato dalla query isCleared().
+     */
+    public void checkAndClearIfAllDead() {
+        if (!cleared) {
+            boolean allDead = enemies.stream().allMatch(Enemy::isDead);
+            if (allDead) {
+                this.cleared = true;
+            }
+        }
+    }
+
     @Override
-    public String getRoomType() { return "NORMAL"; }
+    public RoomType getRoomType() { return RoomType.NORMAL; }
 
     // --- Lootable ---
     @Override
@@ -74,4 +75,4 @@ public class CombatRoom implements Room, Lootable, Combattable {
 
     @Override
     public void claimLoot() { this.lootAvailable = false; }
-}
+}

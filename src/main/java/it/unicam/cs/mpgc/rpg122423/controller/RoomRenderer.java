@@ -4,6 +4,7 @@ import it.unicam.cs.mpgc.rpg122423.dto.DoorDTO;
 import it.unicam.cs.mpgc.rpg122423.dto.EnemyDTO;
 import it.unicam.cs.mpgc.rpg122423.dto.RoomDTO;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Direction;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.RoomType;
 
 import javafx.scene.Cursor;
 import javafx.scene.Group;
@@ -60,9 +61,10 @@ public class RoomRenderer {
         String imagePath = "/assets/floorDoor.png";
 
         switch (doorInfo.roomType()) {
-            case "BOSS" -> imagePath = "/assets/boosRoom Opened.png";
-            case "TREASURE" -> imagePath = doorInfo.isLocked() ? "/assets/treasure locked.png" : "/assets/treasure opened.png";
-            case "SHOP" -> imagePath = doorInfo.isLocked() ? "/assets/shop locked.png" : "/assets/shop opened.png";
+            case BOSS -> imagePath = "/assets/boosRoom Opened.png";
+            case TREASURE -> imagePath = doorInfo.isLocked() ? "/assets/treasure locked.png" : "/assets/treasure opened.png";
+            case SHOP -> imagePath = doorInfo.isLocked() ? "/assets/shop locked.png" : "/assets/shop opened.png";
+            default -> { /* NORMAL: usa floorDoor.png di default */ }
         }
 
         try {

@@ -14,13 +14,16 @@ import java.util.List;
 
 /**
  * Responsabile della conversione dal modello di dominio (Room, Enemy, ecc.)
- * ai DTO utilizzati dalla View (SRP — estratto da DungeonService).
+ * ai DTO utilizzati dalla View.
  */
 public class RoomDTOMapper {
 
     public RoomDTO toRoomDTO(DungeonLevel level) {
         Coordinate currentPos = level.getCurrentPosition();
         Room currentRoom = level.getCurrentRoom();
+
+        // Aggiorna lo stato delle stanze di combattimento prima di costruire il DTO
+        updateCombatRoomState(currentRoom);
 
         List<EnemyDTO> enemyDTOs = new ArrayList<>();
         String phase = "NONE";
@@ -84,6 +87,18 @@ public class RoomDTOMapper {
         );
     }
 
+    /**
+     * Aggiorna lo stato cleared delle stanze di combattimento.
+     * Separato dalla query isCleared() per rispettare CQS (Fix LSP).
+     */
+    private void updateCombatRoomState(Room room) {
+        if (room instanceof CombatRoom combatRoom) {
+            combatRoom.checkAndClearIfAllDead();
+        } else if (room instanceof BossRoom bossRoom) {
+            bossRoom.checkAndClearIfBossDead();
+        }
+    }
+
     private List<ShopItemDTO> mapShopItems(Room currentRoom) {
         List<ShopItemDTO> shopItemDTOs = new ArrayList<>();
         if (currentRoom instanceof ShopRoom shopRoom) {
@@ -108,10 +123,10 @@ public class RoomDTOMapper {
         Room adjacentRoom = level.getRoomAt(targetPos);
 
         if (adjacentRoom == null) {
-            return new DoorDTO(false, "NONE", false);
+            return new DoorDTO(false, RoomType.NORMAL, false);
         }
 
-        String type = adjacentRoom.getRoomType();
+        RoomType type = adjacentRoom.getRoomType();
         boolean locked = false;
 
         if (adjacentRoom instanceof Lockable lockableRoom) {

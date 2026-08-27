@@ -6,14 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Stanza del negozio. Gli oggetti in vendita vengono forniti dall'esterno (DIP).
+ * Stanza del negozio. Gli oggetti in vendita vengono forniti dall'esterno.
  */
 public class ShopRoom implements Room, Lockable {
     private boolean isLocked;
 
     /**
      * Rappresenta un oggetto acquistabile nel negozio.
-     * Incapsula correttamente lo stato di acquisto (ISP).
+     * Incapsula lo stato di acquisto.
      */
     public static class Purchasable {
         private final Item item;
@@ -62,5 +62,5 @@ public class ShopRoom implements Room, Lockable {
     public void unlock() { this.isLocked = false; }
 
     @Override
-    public String getRoomType() { return "SHOP"; }
+    public RoomType getRoomType() { return RoomType.SHOP; }
 }

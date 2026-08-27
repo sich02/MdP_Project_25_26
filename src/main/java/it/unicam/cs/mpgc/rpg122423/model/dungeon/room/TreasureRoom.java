@@ -3,7 +3,7 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon.room;
 import it.unicam.cs.mpgc.rpg122423.model.item.Item;
 
 /**
- * Stanza del tesoro. Contiene un oggetto fornito dall'esterno (DIP).
+ * Stanza del tesoro. Contiene un oggetto fornito dall'esterno.
  */
 public class TreasureRoom implements Room, Lootable, Lockable {
     private boolean cleared;
@@ -49,5 +49,5 @@ public class TreasureRoom implements Room, Lootable, Lockable {
     }
 
     @Override
-    public String getRoomType() { return "TREASURE"; }
+    public RoomType getRoomType() { return RoomType.TREASURE; }
 }

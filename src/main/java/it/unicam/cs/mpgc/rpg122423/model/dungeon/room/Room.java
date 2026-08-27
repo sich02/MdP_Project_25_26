@@ -5,6 +5,5 @@ public interface Room {
     void markAsCleared();
 
     /** Restituisce il tipo di questa stanza per la rappresentazione visiva. */
-    String getRoomType();
+    RoomType getRoomType();
 }
-
