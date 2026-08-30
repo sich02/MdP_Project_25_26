@@ -271,13 +271,13 @@ public class DungeonController {
     }
 
     /**
-     * Mostra la UI di selezione elementale. Usa Element.getColor() e Element.getDisplayName() (OCP).
+     * Mostra la UI di selezione elementale.
      */
     private void showElementalSelectionUI(Element element) {
         javafx.scene.layout.VBox overlay = new javafx.scene.layout.VBox(20);
         overlay.setAlignment(javafx.geometry.Pos.CENTER);
 
-        String borderColor = element.getColor().toString().replace("0x", "#");
+        String borderColor = ElementColorHelper.getColor(element).toString().replace("0x", "#");
 
         overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8); -fx-padding: 30; -fx-border-color: " + borderColor + "; -fx-border-width: 3; -fx-background-radius: 10; -fx-border-radius: 10;");
 
@@ -301,7 +301,7 @@ public class DungeonController {
 
             Element diceElement = diceElements.get(i);
             if (diceElement != Element.NONE) {
-                bg.setStroke(diceElement.getColor());
+                bg.setStroke(ElementColorHelper.getColor(diceElement));
                 bg.setStrokeWidth(3);
             }
 

@@ -16,6 +16,7 @@ public class BossEnemy implements Enemy {
     private final int maxHp;
     private int currentHp;
     private final int baseDamage;
+    private final String spritePath;
     private final List<StatusEffect> activeEffects;
     private EnemyAction nextAction;
     private boolean nextIsHeavy = false;
@@ -28,11 +29,12 @@ public class BossEnemy implements Enemy {
      * @param baseDamage  danno base (piano 1)
      * @param floorNumber numero del piano corrente
      */
-    public BossEnemy(String name, int baseHp, int baseDamage, int floorNumber) {
+    public BossEnemy(String name, int baseHp, int baseDamage, int floorNumber, String spritePath) {
         this.name = name;
         this.maxHp = baseHp + (floorNumber - 1) * 10;
         this.currentHp = this.maxHp;
         this.baseDamage = baseDamage + (floorNumber - 1) * 2;
+        this.spritePath = spritePath;
         this.activeEffects = new ArrayList<>();
         this.prepareNextAction();
     }
@@ -47,6 +49,9 @@ public class BossEnemy implements Enemy {
     public int getMaxHp() { return maxHp; }
 
     public int getBaseDamage() { return baseDamage; }
+
+    @Override
+    public String getSpritePath() { return spritePath; }
 
     @Override
     public void takeDamage(int damage) {

@@ -11,17 +11,36 @@ import java.util.*;
 
 /**
  * Genera il layout di un piano del dungeon, inclusi nemici e loot.
- * Ogni responsabilità di generazione è separata in metodi privati (SRP senza pattern creazionali).
+ * Ogni responsabilità di generazione è separata in metodi privati.
  */
 public class LayoutGenerator {
 
-    // --- Costanti boss ---
-    private static final String[][] BOSS_POOL = {
-            {"Conquest", "40", "5"},
-            {"Dark One", "50", "6"},
-            {"Famine", "35", "7"},
-            {"Little Horn", "45", "5"}
-    };
+    /** Dati di un boss: nome, HP base, danno base, percorso sprite. */
+    private record BossData(String name, int baseHp, int baseDamage, String spritePath) {}
+
+    private static final List<BossData> BOSS_POOL = List.of(
+            new BossData("Conquest", 40, 5, "/assets/Boss_Conquest_Rebirth_ingame.png"),
+            new BossData("Dark One", 50, 6, "/assets/Boss_Dark_One_Rebirth_ingame.png"),
+            new BossData("Famine", 35, 7, "/assets/Boss_Famine_spitting_ingame.png"),
+            new BossData("Little Horn", 45, 5, "/assets/Boss_Little_Horn_black_ingame.png")
+    );
+
+    // --- Costanti nemici standard per piano 1 ---
+    private record EnemyData(String name, int hp, int damage, String spritePath) {}
+
+    private static final List<EnemyData> FLOOR_1_ENEMIES = List.of(
+            new EnemyData("Black Bony", 15, 2, "/assets/Black_Bony_Afterbirth.png"),
+            new EnemyData("Black Globin", 20, 3, "/assets/Black_Globin.png"),
+            new EnemyData("Black Knight", 25, 4, "/assets/Black_Knight.png"),
+            new EnemyData("Blood Cultist", 12, 2, "/assets/Blood_Cultist.png"),
+            new EnemyData("Coal Boy", 18, 3, "/assets/Coal_Boy.png"),
+            new EnemyData("Cultist", 10, 2, "/assets/Cultist.png")
+    );
+
+    private static final List<EnemyData> FLOOR_OTHER_ENEMIES = List.of(
+            new EnemyData("Orc", 30, 3, "/assets/Black_Bony_Afterbirth.png"),
+            new EnemyData("Goblin", 20, 2, "/assets/Black_Bony_Afterbirth.png")
+    );
 
     // --- Costanti combattimento ---
     private static final int MAX_ENEMIES_FLOOR_1 = 3;
@@ -29,8 +48,8 @@ public class LayoutGenerator {
 
     // --- Costanti loot ---
     private static final int DROP_CHANCE = 75;
-    private static final int COIN_WEIGHT = 50;  // 0-49 = moneta
-    private static final int KEY_WEIGHT = 75;   // 50-74 = chiave, 75-99 = cuore
+    private static final int COIN_WEIGHT = 50;
+    private static final int KEY_WEIGHT = 75;
 
     // --- Costanti shop ---
     private static final int SHOP_HP_ITEM_CHANCE = 60;
@@ -41,12 +60,14 @@ public class LayoutGenerator {
 
     private final ShapeGenerator shapeGenerator;
     private final TopologicalAnalyzer topologicalAnalyzer;
+    private final ItemPool itemPool;
     private final Random random;
 
     public LayoutGenerator(Random random) {
         this.random = random;
         this.shapeGenerator = new ShapeGenerator(random);
         this.topologicalAnalyzer = new TopologicalAnalyzer();
+        this.itemPool = new ItemPool();
     }
 
     public Map<Coordinate, Room> generateLayout(int floorNumber) {
@@ -55,14 +76,7 @@ public class LayoutGenerator {
         Map<Coordinate, Integer> distances = topologicalAnalyzer.calculateDistances(shape, spawn);
         List<Coordinate> deadEnds = topologicalAnalyzer.findDeadEnds(shape, spawn);
 
-        Coordinate bossRoomCoord = spawn;
-        int maxDist = -1;
-        for (Map.Entry<Coordinate, Integer> entry : distances.entrySet()) {
-            if (entry.getValue() > maxDist) {
-                maxDist = entry.getValue();
-                bossRoomCoord = entry.getKey();
-            }
-        }
+        Coordinate bossRoomCoord = findFarthestCoordinate(distances, spawn);
 
         deadEnds.remove(bossRoomCoord);
         Collections.shuffle(deadEnds, random);
@@ -71,10 +85,10 @@ public class LayoutGenerator {
 
         Map<Coordinate, Room> layout = new HashMap<>();
         layout.put(spawn, new SpawnRoom());
-        layout.put(bossRoomCoord, new BossRoom(createBoss(floorNumber), ItemPool.getRandomItem()));
+        layout.put(bossRoomCoord, new BossRoom(createBoss(floorNumber), itemPool.getRandomItem(random)));
 
         if (treasureCoord != null) {
-            layout.put(treasureCoord, new TreasureRoom(floorNumber >= 2, ItemPool.getRandomItem()));
+            layout.put(treasureCoord, new TreasureRoom(floorNumber >= 2, itemPool.getRandomItem(random)));
         }
         if (shopCoord != null) {
             layout.put(shopCoord, new ShopRoom(floorNumber >= 2, createShopItems()));
@@ -88,54 +102,43 @@ public class LayoutGenerator {
         return layout;
     }
 
+    private Coordinate findFarthestCoordinate(Map<Coordinate, Integer> distances, Coordinate fallback) {
+        Coordinate farthest = fallback;
+        int maxDist = -1;
+        for (Map.Entry<Coordinate, Integer> entry : distances.entrySet()) {
+            if (entry.getValue() > maxDist) {
+                maxDist = entry.getValue();
+                farthest = entry.getKey();
+            }
+        }
+        return farthest;
+    }
+
     // -------------------------------------------------------------------------
-    // Metodi privati — creazione nemici
+    // Creazione nemici
     // -------------------------------------------------------------------------
 
     private List<Enemy> createEnemies(int floorNumber) {
         int maxEnemies = (floorNumber == 1) ? MAX_ENEMIES_FLOOR_1 : MAX_ENEMIES_DEFAULT;
         int enemyCount = random.nextInt(maxEnemies) + 1;
         List<Enemy> result = new ArrayList<>();
+        List<EnemyData> pool = (floorNumber == 1) ? FLOOR_1_ENEMIES : FLOOR_OTHER_ENEMIES;
         for (int i = 0; i < enemyCount; i++) {
-            result.add(pickRandomEnemy(floorNumber));
+            EnemyData data = pool.get(random.nextInt(pool.size()));
+            result.add(new StandardEnemy(data.name(), data.hp(), data.damage(), data.spritePath()));
         }
         return result;
     }
 
-    private Enemy pickRandomEnemy(int floorNumber) {
-        if (floorNumber == 1) {
-            return switch (random.nextInt(6)) {
-                case 0 -> new StandardEnemy("Black Bony", 15, 2);
-                case 1 -> new StandardEnemy("Black Globin", 20, 3);
-                case 2 -> new StandardEnemy("Black Knight", 25, 4);
-                case 3 -> new StandardEnemy("Blood Cultist", 12, 2);
-                case 4 -> new StandardEnemy("Coal Boy", 18, 3);
-                default -> new StandardEnemy("Cultist", 10, 2);
-            };
-        } else {
-            return switch (random.nextInt(2)) {
-                case 0 -> new StandardEnemy("Orc", 30, 3);
-                default -> new StandardEnemy("Goblin", 20, 2);
-            };
-        }
-    }
-
     private BossEnemy createBoss(int floorNumber) {
-        int index = random.nextInt(BOSS_POOL.length);
-        String name = BOSS_POOL[index][0];
-        int baseHp = Integer.parseInt(BOSS_POOL[index][1]);
-        int baseDmg = Integer.parseInt(BOSS_POOL[index][2]);
-        return new BossEnemy(name, baseHp, baseDmg, floorNumber);
+        BossData data = BOSS_POOL.get(random.nextInt(BOSS_POOL.size()));
+        return new BossEnemy(data.name(), data.baseHp(), data.baseDamage(), floorNumber, data.spritePath());
     }
 
     // -------------------------------------------------------------------------
-    // Metodi privati — generazione loot stanze combattimento
+    // Generazione loot stanze combattimento
     // -------------------------------------------------------------------------
 
-    /**
-     * Genera un oggetto di loot per una stanza di combattimento con il 75% di probabilità.
-     * @return l'oggetto generato, o null se la stanza non dropppa nulla
-     */
     private Item generateCombatLoot() {
         if (random.nextInt(100) >= DROP_CHANCE) {
             return null;
@@ -151,24 +154,21 @@ public class LayoutGenerator {
     }
 
     private Item generateRandomHeart() {
-        return switch (random.nextInt(3)) {
-            case 0 -> new HalfHeartItem();
-            case 1 -> new RedHeartItem();
-            default -> new DoubleHeartItem();
-        };
+        int roll = random.nextInt(3);
+        if (roll == 0) return new HalfHeartItem();
+        if (roll == 1) return new RedHeartItem();
+        return new DoubleHeartItem();
     }
 
     // -------------------------------------------------------------------------
-    // Metodi privati — generazione oggetti shop
+    // Generazione oggetti shop
     // -------------------------------------------------------------------------
 
     private List<ShopRoom.Purchasable> createShopItems() {
-        // Oggetto principale: 60% HP item, 40% item random
         Item mainItem = (random.nextInt(100) < SHOP_HP_ITEM_CHANCE)
-                ? ItemPool.getRandomHpItem()
-                : ItemPool.getRandomItem();
+                ? itemPool.getRandomHpItem(random)
+                : itemPool.getRandomItem(random);
 
-        // Consumabile: chiave o cuore, prezzo 5 (scontato a 3 col 25% di probabilità)
         Item consumable = random.nextBoolean() ? new KeyItem() : generateRandomHeart();
         int price = (random.nextInt(100) < SHOP_DISCOUNT_CHANCE) ? SHOP_DISCOUNT_PRICE : SHOP_CONSUMABLE_PRICE;
 

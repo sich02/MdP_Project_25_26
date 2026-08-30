@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg122423.model.dungeon;
 
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.Coordinate;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.Room;
+import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.RoomType;
 import it.unicam.cs.mpgc.rpg122423.model.dungeon.room.SpawnRoom;
 import org.junit.jupiter.api.Test;
 
@@ -76,8 +77,8 @@ class FloorTest {
         }
 
         @Override
-        public String getRoomType() {
-            return "NORMAL";
+        public RoomType getRoomType() {
+            return RoomType.NORMAL;
         }
     }
 }

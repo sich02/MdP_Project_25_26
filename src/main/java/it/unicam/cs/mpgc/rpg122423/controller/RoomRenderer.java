@@ -174,22 +174,8 @@ public class RoomRenderer {
         try {
             for (int i = 0; i < enemies.size(); i++) {
                 EnemyDTO enemy = enemies.get(i);
-                String spriteName = switch (enemy.name()) {
-                    case "Black Bony" -> "Black_Bony_Afterbirth.png";
-                    case "Black Globin" -> "Black_Globin.png";
-                    case "Black Knight" -> "Black_Knight.png";
-                    case "Blood Cultist" -> "Blood_Cultist.png";
-                    case "Coal Boy" -> "Coal_Boy.png";
-                    case "Cultist" -> "Cultist.png";
-                    // Boss sprites
-                    case "Conquest" -> "Boss_Conquest_Rebirth_ingame.png";
-                    case "Dark One" -> "Boss_Dark_One_Rebirth_ingame.png";
-                    case "Famine" -> "Boss_Famine_spitting_ingame.png";
-                    case "Little Horn" -> "Boss_Little_Horn_black_ingame.png";
-                    default -> "Black_Bony_Afterbirth.png";
-                };
 
-                ImageView enemySprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream("/assets/" + spriteName)));
+                ImageView enemySprite = new ImageView(new Image(RoomRenderer.class.getResourceAsStream(enemy.spritePath())));
                 enemySprite.setFitWidth(enemySize);
                 enemySprite.setPreserveRatio(true);
                 enemySprite.setSmooth(false);

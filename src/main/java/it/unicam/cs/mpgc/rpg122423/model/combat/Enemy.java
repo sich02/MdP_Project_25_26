@@ -8,6 +8,7 @@ public interface Enemy extends StatusEffectHolder {
     int getCurrentHp();
     int getMaxHp();
     int getBaseDamage();
+    String getSpritePath();
     void takeDamage(int damage);
     boolean isDead();
     EnemyAction getNextAction();

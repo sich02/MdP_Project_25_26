@@ -30,18 +30,10 @@ public class TopologicalAnalyzer {
     public List<Coordinate> findDeadEnds(Set<Coordinate> layout, Coordinate spawn) {
         List<Coordinate> deadEnds = new ArrayList<>();
         for (Coordinate coord : layout) {
-            if (!coord.equals(spawn) && countNeighbors(coord, layout) == 1) {
+            if (!coord.equals(spawn) && coord.countNeighborsIn(layout) == 1) {
                 deadEnds.add(coord);
             }
         }
         return deadEnds;
-    }
-
-    private int countNeighbors(Coordinate coord, Set<Coordinate> layout) {
-        int count = 0;
-        for (Coordinate neighbor : coord.getNeighbors()) {
-            if (layout.contains(neighbor)) count++;
-        }
-        return count;
     }
 }

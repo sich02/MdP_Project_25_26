@@ -15,4 +15,15 @@ public record Coordinate(int x, int y) {
     public Coordinate moveTo(Direction direction) {
         return direction.applyTo(this);
     }
+
+    /**
+     * Conta quanti vicini di questa coordinata sono presenti nel layout fornito.
+     */
+    public int countNeighborsIn(java.util.Set<Coordinate> layout) {
+        int count = 0;
+        for (Coordinate neighbor : getNeighbors()) {
+            if (layout.contains(neighbor)) count++;
+        }
+        return count;
+    }
 }

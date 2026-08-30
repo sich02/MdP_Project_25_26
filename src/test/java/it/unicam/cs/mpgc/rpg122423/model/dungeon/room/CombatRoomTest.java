@@ -7,7 +7,7 @@ class CombatRoomTest {
 
     @Test
     void testRoomWithoutLoot() {
-        it.unicam.cs.mpgc.rpg122423.model.combat.Enemy dummy = new it.unicam.cs.mpgc.rpg122423.model.combat.StandardEnemy("Dummy", 10, 1);
+        it.unicam.cs.mpgc.rpg122423.model.combat.Enemy dummy = new it.unicam.cs.mpgc.rpg122423.model.combat.StandardEnemy("Dummy", 10, 1, "/assets/dummy.png");
         CombatRoom room = new CombatRoom(false, java.util.List.of(dummy), null);
 
         assertFalse(room.isCleared(), "La CombatRoom non deve essere risolta appena creata.");
@@ -21,7 +21,7 @@ class CombatRoomTest {
 
     @Test
     void testRoomWithLootRequiresClearing() {
-        it.unicam.cs.mpgc.rpg122423.model.combat.Enemy dummy = new it.unicam.cs.mpgc.rpg122423.model.combat.StandardEnemy("Dummy", 10, 1);
+        it.unicam.cs.mpgc.rpg122423.model.combat.Enemy dummy = new it.unicam.cs.mpgc.rpg122423.model.combat.StandardEnemy("Dummy", 10, 1, "/assets/dummy.png");
         CombatRoom room = new CombatRoom(true, java.util.List.of(dummy), new it.unicam.cs.mpgc.rpg122423.model.item.CoinItem());
 
         assertFalse(room.hasLoot(), "Il loot non deve essere disponibile PRIMA di aver pulito la stanza.");
@@ -33,7 +33,7 @@ class CombatRoomTest {
 
     @Test
     void testClaimLootIsIdempotent() {
-        it.unicam.cs.mpgc.rpg122423.model.combat.Enemy dummy = new it.unicam.cs.mpgc.rpg122423.model.combat.StandardEnemy("Dummy", 10, 1);
+        it.unicam.cs.mpgc.rpg122423.model.combat.Enemy dummy = new it.unicam.cs.mpgc.rpg122423.model.combat.StandardEnemy("Dummy", 10, 1, "/assets/dummy.png");
         CombatRoom room = new CombatRoom(true, java.util.List.of(dummy), new it.unicam.cs.mpgc.rpg122423.model.item.CoinItem());
 
         room.markAsCleared(); // Rendiamo il loot disponibile

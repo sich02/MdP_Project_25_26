@@ -6,5 +6,6 @@ public record EnemyDTO(
         int maxHp,
         String intentDescription,
         boolean isBurned,
-        boolean isPoisoned
+        boolean isPoisoned,
+        String spritePath
 ) {}

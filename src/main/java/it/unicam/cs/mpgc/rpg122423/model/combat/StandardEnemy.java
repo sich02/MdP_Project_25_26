@@ -15,14 +15,16 @@ public class StandardEnemy implements Enemy {
     private final int maxHp;
     private int currentHp;
     private final int baseDamage;
+    private final String spritePath;
     private final List<StatusEffect> activeEffects;
     private EnemyAction nextAction;
 
-    public StandardEnemy(String name, int maxHp, int baseDamage) {
+    public StandardEnemy(String name, int maxHp, int baseDamage, String spritePath) {
         this.name = name;
         this.maxHp = maxHp;
         this.currentHp = maxHp;
         this.baseDamage = baseDamage;
+        this.spritePath = spritePath;
         this.activeEffects = new ArrayList<>();
         this.prepareNextAction();
     }
@@ -37,6 +39,9 @@ public class StandardEnemy implements Enemy {
     public int getMaxHp() { return maxHp; }
 
     public int getBaseDamage() { return baseDamage; }
+
+    @Override
+    public String getSpritePath() { return spritePath; }
 
     @Override
     public void takeDamage(int damage) {

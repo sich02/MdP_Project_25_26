@@ -58,7 +58,8 @@ public class RoomDTOMapper {
                                     ? "Intento: " + enemy.getNextAction().damage() + " Danni"
                                     : "Intento: Sconosciuto",
                             burned,
-                            poisoned
+                            poisoned,
+                            enemy.getSpritePath()
                     ));
                 }
             }

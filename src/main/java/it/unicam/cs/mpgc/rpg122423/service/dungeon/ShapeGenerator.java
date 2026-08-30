@@ -6,6 +6,8 @@ import java.util.*;
 
 public class ShapeGenerator {
 
+    private static final double BRANCH_THRESHOLD = 0.5;
+
     private final Random random;
 
     public ShapeGenerator(Random random) {
@@ -25,7 +27,7 @@ public class ShapeGenerator {
             Coordinate slot = availableSlots.remove(random.nextInt(availableSlots.size()));
             if (layout.contains(slot)) continue;
 
-            if (countNeighbors(slot, layout) > 1 && random.nextDouble() > 0.5) {
+            if (slot.countNeighborsIn(layout) > 1 && random.nextDouble() > BRANCH_THRESHOLD) {
                 continue;
             }
 
@@ -47,13 +49,5 @@ public class ShapeGenerator {
                 slots.add(neighbor);
             }
         }
-    }
-
-    private int countNeighbors(Coordinate coord, Set<Coordinate> layout) {
-        int count = 0;
-        for (Coordinate neighbor : coord.getNeighbors()) {
-            if (layout.contains(neighbor)) count++;
-        }
-        return count;
     }
 }

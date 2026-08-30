@@ -109,7 +109,7 @@ public class CombatUIManager {
                 it.unicam.cs.mpgc.rpg122423.model.dice.Element diceElement = diceElements.get(i);
                 if (diceElement != it.unicam.cs.mpgc.rpg122423.model.dice.Element.NONE) {
                     javafx.scene.effect.DropShadow elementGlow = new javafx.scene.effect.DropShadow();
-                    elementGlow.setColor(diceElement.getColor());
+                    elementGlow.setColor(ElementColorHelper.getColor(diceElement));
                     elementGlow.setRadius(10);
                     elementGlow.setSpread(0.6);
                     diceSprite.setEffect(elementGlow);
@@ -262,7 +262,7 @@ public class CombatUIManager {
                             : it.unicam.cs.mpgc.rpg122423.model.dice.Element.NONE;
             if (el != it.unicam.cs.mpgc.rpg122423.model.dice.Element.NONE) {
                 DropShadow elementGlow = new DropShadow();
-                elementGlow.setColor(el.getColor());
+                elementGlow.setColor(ElementColorHelper.getColor(el));
                 elementGlow.setRadius(10);
                 elementGlow.setSpread(0.6);
                 diceViews[i].setEffect(elementGlow);
